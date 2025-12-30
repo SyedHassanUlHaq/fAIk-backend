@@ -1,5 +1,10 @@
 from pydantic import BaseModel, EmailStr, field_validator
 
+class PaymentIntentCreate(BaseModel):
+    amount: int
+    user_id: str
+    order_id: str
+
 class UserCreate(BaseModel):
     first_name: str
     last_name: str
