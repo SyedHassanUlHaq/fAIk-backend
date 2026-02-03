@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 import stripe
-from ..schemas import PaymentIntentCreate
+from schemas.schemas import PaymentIntentCreate
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 

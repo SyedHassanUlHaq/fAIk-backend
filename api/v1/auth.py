@@ -2,14 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
 from authlib.integrations.starlette_client import OAuth
 from sqlalchemy.orm import Session
-from ..database import get_db
-from .. import schemas, crud
-from ..utils.jwt import create_access_token
-from ..utils.email import send_otp_email, generate_otp
-from ..utils.otp_store import store_otp, verify_otp, delete_otp
-from ..utils.security import hash_password
-from ..schemas import OTPVerify
-import asyncio
+from database import get_db
+import schemas.schemas as schemas, crud
+from utils.jwt import create_access_token
+from utils.email import send_otp_email, generate_otp
+from utils.otp_store import store_otp, verify_otp, delete_otp
+from utils.security import hash_password
 import random, string
 import os
 from dotenv import load_dotenv
