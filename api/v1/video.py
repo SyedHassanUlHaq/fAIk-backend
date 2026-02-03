@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from typing import Dict
 
 # Import your existing functions from main.py
-from main import run_fake_detection_session
+from helpers.helpers import run_fake_detection_session
 
 app = FastAPI(title="Deepfake Detection API")
 

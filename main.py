@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from .database import engine
-from . import models
-from .api.v1 import payments, webhooks, auth, video
+from database import engine
+import models.models as models
+from api.v1 import payments, webhooks, auth, video
 from starlette.middleware.sessions import SessionMiddleware
 import os
 from dotenv import load_dotenv
