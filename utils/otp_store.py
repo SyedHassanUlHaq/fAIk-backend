@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 from typing import Dict
+from config.project_config import OTP_EXPIRE_MINUTES
 
-OTP_EXPIRE_MINUTES = 5  # default, can be loaded from .env
+# OTP_EXPIRE_MINUTES = 5  # default, can be loaded from .env
 
 otp_store: Dict[str, dict] = {}
 # Structure:

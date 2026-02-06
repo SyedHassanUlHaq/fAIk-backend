@@ -1,13 +1,11 @@
 import uuid
 from datetime import datetime
-
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-
 from database import Base
 
-class Payment(Base):
+class Payment(Base):    
     __tablename__ = "payments"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -21,3 +19,4 @@ class Payment(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="payments")
+
