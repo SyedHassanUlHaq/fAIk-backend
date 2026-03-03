@@ -34,7 +34,7 @@ class XCLIP_DeMamba(nn.Module):
         self, channel_size=768, class_num=1
     ):
         super(XCLIP_DeMamba, self).__init__()
-        self.encoder = XCLIPVisionModel.from_pretrained("/mnt/data2/dataset/pretrained_weights/xclip")
+        self.encoder = XCLIPVisionModel.from_pretrained("/home/syed-hassan-ul-haq/repos/fAIk-backend/xclip-base-patch16")
         blocks = []
         channel = 768
         self.fusing_ratios = 1

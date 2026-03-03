@@ -10,17 +10,16 @@ Label Convention:
     0 = Real
     1 = Fake
 """
-
-from helpers.helpers import audio_model
-from config.project_config import VIDEO_PATH, DEVICE, CHECKPOINT, THRESHOLD
-
+import os
+import sys
+import torch
 # ============================================================
 # GLOBAL CONFIGURATION - Modify these variables as needed
 # ============================================================
-# VIDEO_PATH = "D:/aixoware/fAIk-backend/helpers/input.mp4"  
-# DEVICE = "cpu"                         
-# CHECKPOINT = "checkpoints/fused_best.pt"  
-# THRESHOLD = 0.5                         
+VIDEO_PATH = "/home/syed-hassan-ul-haq/Downloads/test3.mp4"  # Path to the testing video
+DEVICE = "cpu"                          # Device: "cuda" or "cpu"
+CHECKPOINT = "checkpoints/fused_best.pt"  # Model checkpoint path
+THRESHOLD = 0.5                         # Classification threshold (0.0 - 1.0)
 # ============================================================
 
 import os
@@ -35,10 +34,10 @@ import torch
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, THIS_DIR)
 
-from raft.raft import RAFT
-from raft.utils.utils import InputPadder
-from models.fused_model import FusedHeadModel
-from utils.augmentations import ValidationTransform
+from validation.raft.raft import RAFT
+from validation.raft.utils.utils import InputPadder
+from validation.models.fused_model import FusedHeadModel
+from validation.utils.augmentations import ValidationTransform
 
 
 # ============================================================
@@ -153,8 +152,21 @@ def load_raft_model(ckpt_path: str, device: str) -> RAFT:
 # Main
 # ============================================================
 
-def validate_video(video_path: str, checkpoint: str, device: str = "cpu", threshold: float = 0.5):
-    """Run deepfake detection on a single video"""
+def validate_video(video_path: str, checkpoint: str, device: str = "cuda", threshold: float = 0.5):
+    """Run deepfake detection on a single video
+    
+    Args:
+        video_path: Path to input video file
+        checkpoint: Path to model checkpoint
+        device: Device to run inference on ("cuda" or "cpu"). Accepts both str and torch.device.
+        threshold: Probability threshold for fake classification (0.0-1.0)
+    
+    Returns:
+        Dict with keys: probability, prediction, threshold
+    """
+    # Convert device to string if it's a torch.device object
+    if isinstance(device, torch.device):
+        device = device.type
     
     raft_ckpt = os.path.join(THIS_DIR, "checkpoints", "raft-sintel.pth")
     
@@ -167,8 +179,8 @@ def validate_video(video_path: str, checkpoint: str, device: str = "cpu", thresh
     
     # Compute optical flows
     print(f"[*] Computing optical flows...")
-    # raft_model = load_raft_model(raft_ckpt, device)
-    flows = compute_all_flows(audio_model, device, frames_flow)
+    raft_model = load_raft_model(raft_ckpt, device)
+    flows = compute_all_flows(raft_model, device, frames_flow)
     print(f"[*] Flows shape: {flows.shape}")
     del raft_model
     torch.cuda.empty_cache()

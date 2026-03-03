@@ -34,3 +34,8 @@ coverage.xml
 *.db
 .DS_Store
 *.egg-info
+validation/checkpoints/
+checkpoints/
+alembic/versions/
+sessions/
+xclip-base-patch16

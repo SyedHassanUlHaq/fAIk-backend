@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 UPLOAD_DIR = "sessions"
 VIDEO_MODEL_PATH = "models/video_fake_detector.h5"
