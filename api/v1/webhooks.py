@@ -2,7 +2,6 @@ import os
 import stripe
 from fastapi import APIRouter, Request, HTTPException, Depends
 from sqlalchemy.orm import Session
-
 from app.database import get_db
 from app.models import Payment
 

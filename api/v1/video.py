@@ -1,75 +1,63 @@
 import os
 import shutil
-from fastapi import FastAPI, UploadFile, File, BackgroundTasks, HTTPException
+import uuid
+import json
+from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException
 from fastapi.responses import JSONResponse
-from typing import Dict
 
-# Import your existing functions from main.py
-from helpers.helpers import run_fake_detection_session
+from helpers.session_helper import run_fake_detection_session
+from config.project_config import UPLOAD_DIR
 
-app = FastAPI(title="Deepfake Detection API")
+router = APIRouter()
 
-# Ensure the base sessions directory exists
-UPLOAD_DIR = "sessions"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs("temp", exist_ok=True)
 
-# Dictionary to keep track of job status (In-memory for this example)
-jobs = {}
 
-@app.post("/upload-video/")
-async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
-    """
-    Uploads a video and starts the background processing.
-    Returns a session_id to track progress.
-    """
-    if not file.filename.endswith(('.mp4', '.avi', '.mov')):
-        raise HTTPException(status_code=400, detail="Invalid file type. Please upload a video.")
+@router.post("/upload-video")
+async def upload_video(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...)
+):
+    if not file.filename.endswith((".mp4", ".avi", ".mov")):
+        raise HTTPException(status_code=400, detail="Invalid video format")
 
-    # 1. Create a temporary landing spot for the raw upload
-    temp_path = f"temp_{file.filename}"
+    # unique temp file
+    temp_filename = f"{uuid.uuid4()}_{file.filename}"
+    temp_path = os.path.join("temp", temp_filename)
+
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # 2. Assign job status
-    # We'll let your run_fake_detection_session handle the UUID generation internally
-    # but we trigger it as a background task.
-    
-    def process_video_task(path: str):
+    def process_video(path: str):
         try:
-            results = run_fake_detection_session(path)
-            # Cleanup the temporary uploaded file after processing
+            run_fake_detection_session(path)
+        finally:
             if os.path.exists(path):
                 os.remove(path)
-            return results
-        except Exception as e:
-            print(f"Error processing session: {e}")
 
-    background_tasks.add_task(process_video_task, temp_path)
+    background_tasks.add_task(process_video, temp_path)
 
     return {
-        "message": "Video uploaded successfully. Processing started in background.",
-        "temp_file": temp_path
+        "message": "Video uploaded. Processing started.",
+        "status": "processing"
     }
 
-@app.get("/results/{session_id}")
-async def get_results(session_id: str):
-    """
-    Retrieve the results of a session by reading the generated JSON file.
-    """
+
+@router.get("/results/{session_id}")
+def get_results(session_id: str):
     result_path = f"sessions/{session_id}/results/probabilities.json"
-    
+
     if not os.path.exists(result_path):
         return JSONResponse(
-            status_code=404, 
-            content={"message": "Results not found. The session might still be processing or the ID is invalid."}
+            status_code=404,
+            content={"message": "Results not ready or invalid session_id"}
         )
-    
-    import json
-    with open(result_path, "r") as f:
-        data = json.load(f)
-    
-    return data
 
-@app.get("/health")
+    with open(result_path, "r") as f:
+        return json.load(f)
+
+
+@router.get("/health")
 def health_check():
     return {"status": "active"}
