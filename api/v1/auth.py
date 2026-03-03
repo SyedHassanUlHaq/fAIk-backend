@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.responses import RedirectResponse
 from authlib.integrations.starlette_client import OAuth
 from sqlalchemy.orm import Session
 from database import get_db
@@ -11,6 +10,8 @@ from utils.security import hash_password
 import random, string
 import os
 from dotenv import load_dotenv
+
+load_dotenv()
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -93,8 +94,6 @@ def reset_password_verify(payload: schemas.ResetPasswordVerify, db: Session = De
 
     return {"detail": "Password reset successfully"}
 
-load_dotenv()
-
 oauth = OAuth()
 CONF_URL = "https://accounts.google.com/.well-known/openid-configuration"
 
@@ -128,8 +127,6 @@ oauth.register(
     authorize_url="https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
     client_kwargs={"scope": "User.Read"},
 )
-
-router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 OAUTH_PROVIDERS = ["google", "facebook", "microsoft"]
 

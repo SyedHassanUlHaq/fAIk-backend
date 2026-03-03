@@ -1,0 +1,37 @@
+"""Configuration module."""
+
+from config.project_config import (
+    UPLOAD_DIR,
+    VIDEO_MODEL_PATH,
+    AUDIO_MODEL_PATH,
+    DATABASE_URL,
+    DEVICE,
+    CHECKPOINT,
+    THRESHOLD,
+    OTP_EXPIRE_MINUTES,
+    SECRET_KEY,
+    ALGORITHM,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    SMTP_SERVER,
+    SMTP_PORT,
+    SMTP_USER,
+    SMTP_PASSWORD,
+)
+
+__all__ = [
+    "UPLOAD_DIR",
+    "VIDEO_MODEL_PATH",
+    "AUDIO_MODEL_PATH",
+    "DATABASE_URL",
+    "DEVICE",
+    "CHECKPOINT",
+    "THRESHOLD",
+    "OTP_EXPIRE_MINUTES",
+    "SECRET_KEY",
+    "ALGORITHM",
+    "ACCESS_TOKEN_EXPIRE_MINUTES",
+    "SMTP_SERVER",
+    "SMTP_PORT",
+    "SMTP_USER",
+    "SMTP_PASSWORD",
+]

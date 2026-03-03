@@ -6,11 +6,6 @@ from config.project_config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MIN
 
 load_dotenv()
 
-# SECRET_KEY = os.getenv("SECRET_KEY")
-# ALGORITHM = "HS256"
-# ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))

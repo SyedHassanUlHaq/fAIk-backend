@@ -5,6 +5,16 @@ from validation.validate import load_raft_model
 
 audio_model = load_raft_model(ckpt_path="checkpoints/fused_best.pt", device="cpu")
 
+def predict_video(video_path: str) -> float:
+    """Predicts deepfake probability for a video interval."""
+    # TODO: Implement video prediction logic
+    return 0.0
+
+def predict_audio(audio_path: str) -> float:
+    """Predicts deepfake probability for an audio interval."""
+    # TODO: Implement audio prediction logic
+    return 0.0
+
 def predict_all_video_intervals(folder_path: str) -> Dict:
     results = []
     video_dir = f"{folder_path}/videos/"

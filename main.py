@@ -1,14 +1,11 @@
 from fastapi import FastAPI
 from database import engine
-# import models as models
 from api.v1 import payments, webhooks, auth, video
 from starlette.middleware.sessions import SessionMiddleware
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
-
-# models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Auth API")
 

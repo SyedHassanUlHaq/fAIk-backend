@@ -4,9 +4,9 @@ import uuid
 import json
 from typing import Dict
 
-from audio_utils import extract_audio_from_video, split_audio_into_intervals
-from video_utils import split_video_into_intervals
-from prediction_utils import predict_all_video_intervals, predict_all_audio_intervals, combine_interval_probabilities
+from helpers.audio_helper import extract_audio_from_video, split_audio_into_intervals
+from helpers.video_helper import split_video_into_intervals
+from helpers.prediction_helper import predict_all_video_intervals, predict_all_audio_intervals, combine_interval_probabilities
 
 def run_fake_detection_session(video_path: str) -> Dict:
     """End-to-end orchestration for frontend and API usage."""
