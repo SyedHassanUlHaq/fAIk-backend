@@ -1,13 +1,22 @@
 from fastapi import FastAPI
-from database import engine
-from api.v1 import payments, webhooks, auth, video
 from starlette.middleware.sessions import SessionMiddleware
 import os
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
+
+from api.v1 import payments, webhooks, auth, video
+from ml_models.loader import load_models
 
 load_dotenv()
 
-app = FastAPI(title="Auth API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("[*] Loading models at startup...")
+    load_models()
+    yield
+    print("[*] Server shutdown")
+
+app = FastAPI(title="fAIk Backend API", version="1.0", lifespan=lifespan)
 
 app.add_middleware(
     SessionMiddleware,
@@ -21,4 +30,4 @@ app.include_router(video.router, prefix="/api/v1/video", tags=["Video Processing
 
 @app.get("/")
 def root():
-    return {"message": "API running"}
+    return {"message": "API running", "version": app.version}

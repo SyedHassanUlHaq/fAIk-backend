@@ -12,18 +12,6 @@ Label Convention:
 """
 import os
 import sys
-import torch
-# ============================================================
-# GLOBAL CONFIGURATION - Modify these variables as needed
-# ============================================================
-VIDEO_PATH = "/home/syed-hassan-ul-haq/Downloads/test3.mp4"  # Path to the testing video
-DEVICE = "cpu"                          # Device: "cuda" or "cpu"
-CHECKPOINT = "checkpoints/fused_best.pt"  # Model checkpoint path
-THRESHOLD = 0.5                         # Classification threshold (0.0 - 1.0)
-# ============================================================
-
-import os
-import sys
 from typing import List
 
 import cv2
@@ -152,21 +140,8 @@ def load_raft_model(ckpt_path: str, device: str) -> RAFT:
 # Main
 # ============================================================
 
-def validate_video(video_path: str, checkpoint: str, device: str = "cuda", threshold: float = 0.5):
-    """Run deepfake detection on a single video
-    
-    Args:
-        video_path: Path to input video file
-        checkpoint: Path to model checkpoint
-        device: Device to run inference on ("cuda" or "cpu"). Accepts both str and torch.device.
-        threshold: Probability threshold for fake classification (0.0-1.0)
-    
-    Returns:
-        Dict with keys: probability, prediction, threshold
-    """
-    # Convert device to string if it's a torch.device object
-    if isinstance(device, torch.device):
-        device = device.type
+def validate_video(video_path, raft_model, fused_model, device, threshold):
+    """Run deepfake detection on a single video"""
     
     raft_ckpt = os.path.join(THIS_DIR, "checkpoints", "raft-sintel.pth")
     
@@ -179,7 +154,7 @@ def validate_video(video_path: str, checkpoint: str, device: str = "cuda", thres
     
     # Compute optical flows
     print(f"[*] Computing optical flows...")
-    raft_model = load_raft_model(raft_ckpt, device)
+    # raft_model = load_raft_model(raft_ckpt, device)
     flows = compute_all_flows(raft_model, device, frames_flow)
     print(f"[*] Flows shape: {flows.shape}")
     del raft_model
@@ -201,38 +176,18 @@ def validate_video(video_path: str, checkpoint: str, device: str = "cuda", thres
     
     # Load model and run inference
     print(f"[*] Loading model...")
-    model = FusedHeadModel().to(device)
-    model.load_checkpoint(checkpoint)
-    model.eval()
+    # model = FusedHeadModel().to(device)
+    # model.load_checkpoint(checkpoint)
+    # model.eval()
     
     flows_t = torch.from_numpy(flows).unsqueeze(0).to(device)
     video_t = torch.from_numpy(video_tensor).unsqueeze(0).to(device)
     
     print(f"[*] Running inference...")
     with torch.no_grad():
-        prob = model(flows_t, video_t)
+        prob = fused_model(flows_t, video_t)
     
     prob_val = float(prob.cpu().item())
     prediction = "Fake" if prob_val >= threshold else "Real"
     
     return {"probability": prob_val, "prediction": prediction, "threshold": threshold}
-
-
-def main():
-    """Run deepfake detection using global configuration variables"""
-    
-    if not os.path.exists(VIDEO_PATH):
-        print(f"Error: Video not found: {VIDEO_PATH}")
-        sys.exit(1)
-
-    result = validate_video(VIDEO_PATH, CHECKPOINT, DEVICE, THRESHOLD)
-
-    print("\n" + "=" * 40)
-    print(f"  Probability: {result['probability']:.4f}")
-    print(f"  Prediction:  {result['prediction']}")
-    print("=" * 40)
-
-
-if __name__ == "__main__":
-    main()
-

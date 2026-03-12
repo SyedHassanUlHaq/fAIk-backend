@@ -1,32 +1,61 @@
 import os
-from moviepy.editor import VideoFileClip
+import subprocess
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
-def split_video_into_intervals(video_path: str, folder_name: str) -> list[str]:
-    """Split video into 5-second chunks."""
 
-    videos_dir = os.path.join(folder_name, "videos")
-    os.makedirs(videos_dir, exist_ok=True)
+def create_chunk(input_path, start, end, chunk_path):
+    """Create a single video chunk using ffmpeg"""
+    print(f"[INFO] Creating chunk: {chunk_path} (from {start}s to {end}s)")
+    cmd = [
+        "ffmpeg",
+        "-y",  # overwrite output if exists
+        "-i", input_path,
+        "-ss", str(start),
+        "-to", str(end),
+        "-c:v", "libx264",
+        "-c:a", "aac",
+        "-strict", "experimental",
+        "-loglevel", "error",
+        chunk_path
+    ]
+    subprocess.run(cmd, check=True)
+    print(f"[INFO] Chunk created: {chunk_path}")
+    return chunk_path
 
-    paths = []
 
-    with VideoFileClip(video_path) as clip:
-        duration = int(clip.duration)
+def split_video_into_chunks(input_path, output_dir, chunk_length=5):
+    """
+    Split video into chunks of chunk_length seconds using ffmpeg, preserving audio.
+    Returns list of chunk paths.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    
+    print(f"[INFO] Getting video duration for: {input_path}")
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=noprint_wrappers=1:nokey=1", input_path],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+    )
+    duration = float(result.stdout)
+    print(f"[INFO] Video duration: {duration:.2f} seconds")
 
-        for start in range(0, duration, 5):
-            end = min(start + 5, duration)
+    # Prepare chunk info
+    chunk_infos = []
+    for start in range(0, int(duration), chunk_length):
+        end = min(start + chunk_length, duration)
+        chunk_path = os.path.join(output_dir, f"chunk_{start}-{end}.mp4")
+        chunk_infos.append((input_path, start, end, chunk_path))
 
-            target = os.path.join(videos_dir, f"video_{start:03d}.mp4")
+    chunks = []
 
-            subclip = clip.subclip(start, end)
-            subclip.write_videofile(
-                target,
-                codec="libx264",
-                audio_codec="aac",
-                logger=None
-            )
+    # Run chunk creation in parallel
+    max_workers = min(len(chunk_infos), os.cpu_count())
+    print(f"[INFO] Starting parallel chunk creation with {max_workers} workers")
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        futures = [executor.submit(create_chunk, *info) for info in chunk_infos]
+        for future in as_completed(futures):
+            chunks.append(future.result())
 
-            subclip.close()
-
-            paths.append(target)
-
-    return paths
+    chunks.sort()  # optional: ensure chunks are in chronological order
+    print(f"[INFO] Total chunks created: {len(chunks)}")
+    return chunks

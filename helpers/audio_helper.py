@@ -1,5 +1,5 @@
 import os
-from moviepy.editor import AudioFileClip, VideoFileClip
+from moviepy import AudioFileClip, VideoFileClip
 
 def extract_audio_from_video(video_path: str, folder_name: str) -> str:
     """Extracts full audio track from video."""
