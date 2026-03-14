@@ -1,20 +1,19 @@
 import os
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
-
+from ml_models import loader
+from validation.validate import validate_video
+from config.project_config import DEVICE, THRESHOLD
 
 def create_chunk(input_path, start, end, chunk_path):
-    """Create a single video chunk using ffmpeg"""
     print(f"[INFO] Creating chunk: {chunk_path} (from {start}s to {end}s)")
     cmd = [
         "ffmpeg",
-        "-y",  # overwrite output if exists
-        "-i", input_path,
+        "-y",
         "-ss", str(start),
         "-to", str(end),
-        "-c:v", "libx264",
-        "-c:a", "aac",
-        "-strict", "experimental",
+        "-i", input_path,
+        "-c", "copy",
         "-loglevel", "error",
         chunk_path
     ]
@@ -24,10 +23,6 @@ def create_chunk(input_path, start, end, chunk_path):
 
 
 def split_video_into_chunks(input_path, output_dir, chunk_length=5):
-    """
-    Split video into chunks of chunk_length seconds using ffmpeg, preserving audio.
-    Returns list of chunk paths.
-    """
     os.makedirs(output_dir, exist_ok=True)
     
     print(f"[INFO] Getting video duration for: {input_path}")
@@ -59,3 +54,21 @@ def split_video_into_chunks(input_path, output_dir, chunk_length=5):
     chunks.sort()  # optional: ensure chunks are in chronological order
     print(f"[INFO] Total chunks created: {len(chunks)}")
     return chunks
+
+def infer_chunk(chunk_path):
+    try:
+        print(f"[INFO] Starting inference for chunk: {chunk_path}")
+        result = validate_video(chunk_path, loader.raft_model, loader.fused_model, DEVICE, THRESHOLD)
+        print(f"[INFO] Completed inference for chunk: {chunk_path}, probability: {result['probability']:.4f}")
+        return {
+            "chunk": os.path.basename(chunk_path),
+            "path": chunk_path,
+            "result": result
+        }
+    except Exception as e:
+        print(f"[ERROR] Chunk inference failed: {chunk_path}, error: {e}")
+        return {
+            "chunk": os.path.basename(chunk_path),
+            "path": chunk_path,
+            "result": {"probability": 0.0, "error": str(e)}
+        }

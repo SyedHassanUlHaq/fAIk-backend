@@ -31,10 +31,10 @@ def reorder_data(data, N):
 
 class XCLIP_DeMamba(nn.Module):
     def __init__(
-        self, channel_size=768, class_num=1
+        self, pretrained_encoder: XCLIPVisionModel, channel_size=768, class_num=1
     ):
         super(XCLIP_DeMamba, self).__init__()
-        self.encoder = XCLIPVisionModel.from_pretrained("/home/syed-hassan-ul-haq/repos/fAIk-backend/xclip-base-patch16")
+        self.encoder = pretrained_encoder
         blocks = []
         channel = 768
         self.fusing_ratios = 1

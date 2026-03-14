@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import torch
 
 load_dotenv()
 
@@ -8,7 +9,7 @@ VIDEO_MODEL_PATH = "models/video_fake_detector.h5"
 AUDIO_MODEL_PATH = "models/audio_fake_detector.pth"
 DATABASE_URL = os.getenv("DATABASE_URL")
 VIDEO_PATH = "D:/aixoware/fAIk-backend/helpers/input.mp4"
-DEVICE = "cpu"
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 CHECKPOINT = "checkpoints/fused_best.pt"  
 THRESHOLD = 0.5    
 OTP_EXPIRE_MINUTES = 5

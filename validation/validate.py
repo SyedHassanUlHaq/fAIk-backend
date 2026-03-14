@@ -24,7 +24,6 @@ sys.path.insert(0, THIS_DIR)
 
 from validation.raft.raft import RAFT
 from validation.raft.utils.utils import InputPadder
-from validation.models.fused_model import FusedHeadModel
 from validation.utils.augmentations import ValidationTransform
 
 
@@ -143,7 +142,7 @@ def load_raft_model(ckpt_path: str, device: str) -> RAFT:
 def validate_video(video_path, raft_model, fused_model, device, threshold):
     """Run deepfake detection on a single video"""
     
-    raft_ckpt = os.path.join(THIS_DIR, "checkpoints", "raft-sintel.pth")
+    # raft_ckpt = os.path.join(THIS_DIR, "checkpoints", "raft-sintel.pth")
     
     print(f"[*] Video: {video_path}")
     
@@ -157,8 +156,8 @@ def validate_video(video_path, raft_model, fused_model, device, threshold):
     # raft_model = load_raft_model(raft_ckpt, device)
     flows = compute_all_flows(raft_model, device, frames_flow)
     print(f"[*] Flows shape: {flows.shape}")
-    del raft_model
-    torch.cuda.empty_cache()
+    # del raft_model
+    # torch.cuda.empty_cache()
     
     # Prepare video frames for DeMamba
     cfg = {
@@ -175,7 +174,7 @@ def validate_video(video_path, raft_model, fused_model, device, threshold):
     video_tensor = ValidationTransform(cfg)(frames_video)
     
     # Load model and run inference
-    print(f"[*] Loading model...")
+    # print(f"[*] Loading model...")
     # model = FusedHeadModel().to(device)
     # model.load_checkpoint(checkpoint)
     # model.eval()

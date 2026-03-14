@@ -7,52 +7,20 @@ from pydantic import BaseModel
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from validation.validate import validate_video
-from config.project_config import UPLOAD_DIR, CHECKPOINT, DEVICE, THRESHOLD
-from ml_models.loader import raft_model, fused_model
-from helpers.video_helper import split_video_into_chunks
+from config.project_config import UPLOAD_DIR, THRESHOLD
+from ml_models import loader
+from helpers.video_helper import split_video_into_chunks, infer_chunk
+from datetime import datetime
 
 router = APIRouter()
-
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs("temp", exist_ok=True)
-
 
 class VideoRequest(BaseModel):
     video_path: str
 
 
-# ----------------------------
-# Top-level inference function
-# ----------------------------
-def infer_chunk(chunk_path):
-    """
-    Run validation on a single video chunk.
-    Uses globally loaded raft_model and fused_model.
-    """
-    try:
-        print(f"[INFO] Starting inference for chunk: {chunk_path}")
-        result = validate_video(chunk_path, raft_model, fused_model, DEVICE, THRESHOLD)
-        print(f"[INFO] Completed inference for chunk: {chunk_path}, probability: {result['probability']:.4f}")
-        return {
-            "chunk": os.path.basename(chunk_path),
-            "path": chunk_path,
-            "result": result
-        }
-    except Exception as e:
-        print(f"[ERROR] Chunk inference failed: {chunk_path}, error: {e}")
-        return {
-            "chunk": os.path.basename(chunk_path),
-            "path": chunk_path,
-            "result": {"probability": 0.0, "error": str(e)}
-        }
-
-
-# ----------------------------
-# Upload-video route
-# ----------------------------
 @router.post("/upload-video")
 async def upload_video(request: VideoRequest):
-    print(f"[INFO] Received video upload request: {request.video_path}")
+    print(f"[INFO] {datetime.now()}: Received video upload request: {request.video_path}")
 
     if not os.path.exists(request.video_path):
         print(f"[ERROR] Video file not found: {request.video_path}")
@@ -66,7 +34,6 @@ async def upload_video(request: VideoRequest):
     folder_name = os.path.join(UPLOAD_DIR, session_id)
     print(f"[INFO] Starting session: {session_id}")
 
-    # Create directories
     dirs = ["original", "videos", "audios", "results"]
     for d in dirs:
         path = os.path.join(folder_name, d)
@@ -74,7 +41,6 @@ async def upload_video(request: VideoRequest):
         print(f"[INFO] Created directory: {path}")
 
     try:
-        # Split video into 5-second chunks
         chunks_dir = os.path.join(folder_name, "videos")
         print(f"[INFO] Splitting video into chunks at: {chunks_dir}")
         chunks = split_video_into_chunks(request.video_path, chunks_dir, chunk_length=5)
@@ -83,7 +49,6 @@ async def upload_video(request: VideoRequest):
         chunk_results = []
         total_prob = 0.0
 
-        # Run inference in parallel using threads
         print(f"[INFO] Running inference in parallel for all chunks...")
         max_workers = min(len(chunks), os.cpu_count() or 4)
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -94,12 +59,10 @@ async def upload_video(request: VideoRequest):
                 total_prob += res["result"].get("probability", 0.0)
                 print(f"[INFO] Aggregated result for chunk: {res['chunk']}")
 
-        # Compute overall probability
         overall_prob = total_prob / len(chunks) if chunks else 0.0
         overall_prediction = "Fake" if overall_prob >= THRESHOLD else "Real"
         print(f"[INFO] Overall probability: {overall_prob:.4f}, prediction: {overall_prediction}")
 
-        # Save results
         results_path = os.path.join(folder_name, "results", "probabilities.json")
         with open(results_path, "w") as f:
             json.dump({
@@ -112,6 +75,7 @@ async def upload_video(request: VideoRequest):
                 }
             }, f, indent=4)
         print(f"[INFO] Results saved at: {results_path}")
+        print(f"[INFO {datetime.now()}]: Completed processing for session: {session_id}]")
 
         return {
             "session_id": session_id,

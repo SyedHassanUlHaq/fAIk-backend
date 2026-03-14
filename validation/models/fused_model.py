@@ -7,13 +7,12 @@ import torch.nn as nn
 from .optical_flow_model import OpticalFlowBranch
 from .demamba.DeMamba import XCLIP_DeMamba
 
-
 class FusedHeadModel(nn.Module):
-    def __init__(self):
+    def __init__(self, pretrained_xclip_encoder: XCLIP_DeMamba):
         super().__init__()
 
         self.optical = OpticalFlowBranch(pretrained=False, backbone="resnet50")
-        self.demamba = XCLIP_DeMamba()
+        self.demamba = pretrained_xclip_encoder
 
         # Freeze base models for inference
         for p in self.optical.parameters():
