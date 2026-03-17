@@ -30,7 +30,7 @@ def load_models():
     if xclip_demamba is None:
         print("[*] Loading XCLIPVisionModel + DeMamba...")
         xclip_encoder = XCLIPVisionModel.from_pretrained(
-            "/home/syed-hassan-ul-haq/repos/fAIk-backend/xclip-base-patch16"
+            "microsoft/xclip-base-patch16"
         ).to(DEVICE)
         xclip_encoder.eval()
         xclip_demamba = XCLIP_DeMamba(pretrained_encoder=xclip_encoder).to(DEVICE)
