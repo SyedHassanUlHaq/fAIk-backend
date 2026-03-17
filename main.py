@@ -9,6 +9,9 @@ from ml_models.loader import load_models
 
 load_dotenv()
 
+# Set PyTorch CUDA memory management
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("[*] Loading models at startup...")

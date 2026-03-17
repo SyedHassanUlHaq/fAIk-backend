@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
+from fastapi import UploadFile, File
 from validation.validate import validate_video
 from config.project_config import UPLOAD_DIR, THRESHOLD
 from ml_models import loader
@@ -19,51 +19,50 @@ class VideoRequest(BaseModel):
 
 
 @router.post("/upload-video")
-async def upload_video(request: VideoRequest):
-    print(f"[INFO] {datetime.now()}: Received video upload request: {request.video_path}")
+async def upload_video(file: UploadFile = File(...)):
+    print(f"[INFO] {datetime.now()}: Received video upload request: {file.filename}")
 
-    if not os.path.exists(request.video_path):
-        print(f"[ERROR] Video file not found: {request.video_path}")
-        raise HTTPException(status_code=400, detail="Video file not found")
-
-    if not request.video_path.endswith((".mp4", ".avi", ".mov")):
-        print(f"[ERROR] Invalid video format: {request.video_path}")
-        raise HTTPException(status_code=400, detail="Invalid video format. Supported: .mp4, .avi, .mov")
+    if not file.filename.endswith((".mp4", ".avi", ".mov")):
+        raise HTTPException(status_code=400, detail="Invalid video format")
 
     session_id = str(uuid.uuid4())
     folder_name = os.path.join(UPLOAD_DIR, session_id)
-    print(f"[INFO] Starting session: {session_id}")
 
     dirs = ["original", "videos", "audios", "results"]
     for d in dirs:
-        path = os.path.join(folder_name, d)
-        os.makedirs(path, exist_ok=True)
-        print(f"[INFO] Created directory: {path}")
+        os.makedirs(os.path.join(folder_name, d), exist_ok=True)
 
     try:
+        # ✅ Save uploaded file locally
+        original_path = os.path.join(folder_name, "original", file.filename)
+
+        with open(original_path, "wb") as f:
+            content = await file.read()
+            f.write(content)
+
+        print(f"[INFO] Saved uploaded file at: {original_path}")
+
+        # ✅ Use saved file for processing
         chunks_dir = os.path.join(folder_name, "videos")
-        print(f"[INFO] Splitting video into chunks at: {chunks_dir}")
-        chunks = split_video_into_chunks(request.video_path, chunks_dir, chunk_length=5)
-        print(f"[INFO] Total chunks created: {len(chunks)}")
+        chunks = split_video_into_chunks(original_path, chunks_dir, chunk_length=5)
 
         chunk_results = []
         total_prob = 0.0
 
-        print(f"[INFO] Running inference in parallel for all chunks...")
-        max_workers = min(len(chunks), os.cpu_count() or 4)
+        max_workers = min(len(chunks), 2)
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [executor.submit(infer_chunk, c) for c in chunks]
+
             for future in as_completed(futures):
                 res = future.result()
                 chunk_results.append(res)
                 total_prob += res["result"].get("probability", 0.0)
-                print(f"[INFO] Aggregated result for chunk: {res['chunk']}")
 
         overall_prob = total_prob / len(chunks) if chunks else 0.0
         overall_prediction = "Fake" if overall_prob >= THRESHOLD else "Real"
-        print(f"[INFO] Overall probability: {overall_prob:.4f}, prediction: {overall_prediction}")
 
         results_path = os.path.join(folder_name, "results", "probabilities.json")
+
         with open(results_path, "w") as f:
             json.dump({
                 "session_id": session_id,
@@ -74,8 +73,6 @@ async def upload_video(request: VideoRequest):
                     "threshold": THRESHOLD
                 }
             }, f, indent=4)
-        print(f"[INFO] Results saved at: {results_path}")
-        print(f"[INFO {datetime.now()}]: Completed processing for session: {session_id}]")
 
         return {
             "session_id": session_id,
@@ -89,10 +86,6 @@ async def upload_video(request: VideoRequest):
         }
 
     except Exception as e:
-        error_path = os.path.join(folder_name, "results", "error.json")
-        with open(error_path, "w") as f:
-            json.dump({"session_id": session_id, "error": str(e)}, f, indent=4)
-        print(f"[ERROR] Exception occurred: {e}. Error saved at: {error_path}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

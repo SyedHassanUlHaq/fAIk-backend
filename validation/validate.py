@@ -13,6 +13,7 @@ Label Convention:
 import os
 import sys
 from typing import List
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import cv2
 import numpy as np
@@ -105,8 +106,7 @@ def compute_all_flows(raft_model: RAFT, device: str, frames: List[np.ndarray]) -
     # Preprocess frames for RAFT (resize + crop to 448x448)
     proc = [crop_center(resize_min_side(f, 448), 448) for f in frames]
 
-    flows = []
-    for i in range(len(proc) - 1):
+    def compute_single_flow(i):
         flow = compute_flow_pair(raft_model, device, proc[i], proc[i + 1])
         # Resize to 224x224 for model input
         flow_resized = np.stack([
@@ -115,7 +115,12 @@ def compute_all_flows(raft_model: RAFT, device: str, frames: List[np.ndarray]) -
         ], axis=-1)
         # Normalize: clip to ±20 and scale to [-1, 1]
         flow_norm = np.clip(flow_resized, -20.0, 20.0) / 20.0
-        flows.append(flow_norm.astype(np.float32))
+        return flow_norm.astype(np.float32)
+
+    flows = []
+    max_workers = min(len(proc) - 1, os.cpu_count() or 4)
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        flows = list(executor.map(compute_single_flow, range(len(proc) - 1)))
 
     flows = np.stack(flows, axis=0)  # (T-1, H, W, 2)
     return flows.transpose(0, 3, 1, 2)  # (T-1, 2, H, W)
@@ -142,22 +147,18 @@ def load_raft_model(ckpt_path: str, device: str) -> RAFT:
 def validate_video(video_path, raft_model, fused_model, device, threshold):
     """Run deepfake detection on a single video"""
     
-    # raft_ckpt = os.path.join(THIS_DIR, "checkpoints", "raft-sintel.pth")
-    
     print(f"[*] Video: {video_path}")
     
-    # Decode frames
-    frames_flow = decode_video_cv2(video_path, max_frames=96)
-    frames_video = decode_video_cv2(video_path, max_frames=8)
+    # Decode frames once
+    frames = decode_video_cv2(video_path, max_frames=96)
+    frames_flow = frames
+    frames_video = frames[:8] if len(frames) >= 8 else frames + [frames[-1]] * (8 - len(frames))
     print(f"[*] Decoded {len(frames_flow)} frames for RAFT, {len(frames_video)} for DeMamba")
     
     # Compute optical flows
     print(f"[*] Computing optical flows...")
-    # raft_model = load_raft_model(raft_ckpt, device)
     flows = compute_all_flows(raft_model, device, frames_flow)
     print(f"[*] Flows shape: {flows.shape}")
-    # del raft_model
-    # torch.cuda.empty_cache()
     
     # Prepare video frames for DeMamba
     cfg = {
@@ -173,12 +174,6 @@ def validate_video(video_path, raft_model, fused_model, device, threshold):
     }
     video_tensor = ValidationTransform(cfg)(frames_video)
     
-    # Load model and run inference
-    # print(f"[*] Loading model...")
-    # model = FusedHeadModel().to(device)
-    # model.load_checkpoint(checkpoint)
-    # model.eval()
-    
     flows_t = torch.from_numpy(flows).unsqueeze(0).to(device)
     video_t = torch.from_numpy(video_tensor).unsqueeze(0).to(device)
     
@@ -188,5 +183,8 @@ def validate_video(video_path, raft_model, fused_model, device, threshold):
     
     prob_val = float(prob.cpu().item())
     prediction = "Fake" if prob_val >= threshold else "Real"
+    
+    # Clear GPU cache
+    torch.cuda.empty_cache()
     
     return {"probability": prob_val, "prediction": prediction, "threshold": threshold}
