@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 from api.v1 import payments, webhooks, auth, video, scene
 from ml_models.video import load_models
+from ml_models.scene_detection import get_embedding_model
 
 load_dotenv()
 
@@ -15,6 +16,8 @@ os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 async def lifespan(app: FastAPI):
     print("[*] Loading models at startup...")
     load_models()
+    get_embedding_model()
+    print("[+] All models loaded")
     yield
     print("[*] Server shutdown")
 

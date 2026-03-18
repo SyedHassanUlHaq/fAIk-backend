@@ -18,7 +18,7 @@ def load_models():
     # --------------------------
     if raft_model is None:
         print("[*] Loading RAFT model...")
-        raft_model = load_raft_model("validation/checkpoints/raft-sintel.pth", DEVICE)
+        raft_model = load_raft_model("repositories/validation_tool/checkpoints/raft-sintel.pth", DEVICE)
         print("[+] RAFT model loaded")
 
     # --------------------------
