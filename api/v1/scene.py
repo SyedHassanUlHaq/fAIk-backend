@@ -1,6 +1,6 @@
 from ml_models.scene_detection import get_embedding_model
 from services.scene_detection.detector import detect_scene_changes
-from helpers.video_helper import convert_to_fps
+from services.scene_detection.video_utils import convert_to_fps
 from fastapi import APIRouter, Depends
 
 router = APIRouter()

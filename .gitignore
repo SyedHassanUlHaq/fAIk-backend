@@ -34,7 +34,7 @@ coverage.xml
 *.db
 .DS_Store
 *.egg-info
-validation/checkpoints/
+repositories/validation_tool/checkpoints/
 checkpoints/
 alembic/versions/
 sessions/

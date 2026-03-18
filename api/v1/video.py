@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from fastapi import UploadFile, File
-from validation.validate import validate_video
+from repositories.validation_tool.validate import validate_video
 from config.project_config import UPLOAD_DIR, THRESHOLD
 from ml_models import video
 from helpers.video_helper import split_video_into_chunks, infer_chunk

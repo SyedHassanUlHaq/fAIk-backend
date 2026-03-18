@@ -1,7 +1,7 @@
 from transformers import XCLIPVisionModel
-from validation.models.demamba.DeMamba import XCLIP_DeMamba
-from validation.models.fused_model import FusedHeadModel
-from validation.validate import load_raft_model
+from repositories.validation_tool.models.demamba.DeMamba import XCLIP_DeMamba
+from repositories.validation_tool.models.fused_model import FusedHeadModel
+from repositories.validation_tool.validate import load_raft_model
 from config.project_config import CHECKPOINT, DEVICE
 
 raft_model = None

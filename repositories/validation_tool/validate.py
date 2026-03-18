@@ -23,9 +23,9 @@ import torch
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, THIS_DIR)
 
-from validation.raft.raft import RAFT
-from validation.raft.utils.utils import InputPadder
-from validation.utils.augmentations import ValidationTransform
+from repositories.validation_tool.raft.raft import RAFT
+from repositories.validation_tool.raft.utils.utils import InputPadder
+from repositories.validation_tool.utils.augmentations import ValidationTransform
 
 
 # ============================================================

@@ -2,7 +2,7 @@ import os
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from ml_models import video
-from validation.validate import validate_video
+from repositories.validation_tool.validate import validate_video
 from config.project_config import DEVICE, THRESHOLD
 
 def create_chunk(input_path, start, end, chunk_path):
