@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from fastapi import UploadFile, File
 from validation.validate import validate_video
 from config.project_config import UPLOAD_DIR, THRESHOLD
-from ml_models import loader
+from ml_models import video
 from helpers.video_helper import split_video_into_chunks, infer_chunk
 from datetime import datetime
 
@@ -33,7 +33,6 @@ async def upload_video(file: UploadFile = File(...)):
         os.makedirs(os.path.join(folder_name, d), exist_ok=True)
 
     try:
-        # ✅ Save uploaded file locally
         original_path = os.path.join(folder_name, "original", file.filename)
 
         with open(original_path, "wb") as f:
@@ -42,7 +41,6 @@ async def upload_video(file: UploadFile = File(...)):
 
         print(f"[INFO] Saved uploaded file at: {original_path}")
 
-        # ✅ Use saved file for processing
         chunks_dir = os.path.join(folder_name, "videos")
         chunks = split_video_into_chunks(original_path, chunks_dir, chunk_length=5)
 

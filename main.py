@@ -3,9 +3,8 @@ from starlette.middleware.sessions import SessionMiddleware
 import os
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
-
-from api.v1 import payments, webhooks, auth, video
-from ml_models.loader import load_models
+from api.v1 import payments, webhooks, auth, video, scene
+from ml_models.video import load_models
 
 load_dotenv()
 
@@ -30,6 +29,7 @@ app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(payments.router, prefix="/api/v1/payments", tags=["Payments"])
 app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"])
 app.include_router(video.router, prefix="/api/v1/video", tags=["Video Processing"])
+app.include_router(scene.router, prefix="/api/v1/scene", tags=["Scene Detection"])
 
 @app.get("/")
 def root():

@@ -1,12 +1,9 @@
-# ml_models/loader.py
-
 from transformers import XCLIPVisionModel
 from validation.models.demamba.DeMamba import XCLIP_DeMamba
 from validation.models.fused_model import FusedHeadModel
 from validation.validate import load_raft_model
 from config.project_config import CHECKPOINT, DEVICE
 
-# Global model references
 raft_model = None
 fused_model = None
 xclip_demamba = None
@@ -37,7 +34,7 @@ def load_models():
         xclip_demamba.eval()
         print("[+] XCLIPVisionModel + DeMamba loaded")
 
-    # --------------------------
+    # --------------------------    
     # FusedHeadModel
     # --------------------------
     if fused_model is None:

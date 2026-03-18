@@ -1,7 +1,7 @@
 import os
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from ml_models import loader
+from ml_models import video
 from validation.validate import validate_video
 from config.project_config import DEVICE, THRESHOLD
 
@@ -34,7 +34,6 @@ def split_video_into_chunks(input_path, output_dir, chunk_length=5):
     duration = float(result.stdout)
     print(f"[INFO] Video duration: {duration:.2f} seconds")
 
-    # Prepare chunk info
     chunk_infos = []
     for start in range(0, int(duration), chunk_length):
         end = min(start + chunk_length, duration)
@@ -43,7 +42,6 @@ def split_video_into_chunks(input_path, output_dir, chunk_length=5):
 
     chunks = []
 
-    # Run chunk creation in parallel
     max_workers = min(len(chunk_infos), os.cpu_count())
     print(f"[INFO] Starting parallel chunk creation with {max_workers} workers")
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -51,14 +49,14 @@ def split_video_into_chunks(input_path, output_dir, chunk_length=5):
         for future in as_completed(futures):
             chunks.append(future.result())
 
-    chunks.sort()  # optional: ensure chunks are in chronological order
+    chunks.sort()
     print(f"[INFO] Total chunks created: {len(chunks)}")
     return chunks
 
 def infer_chunk(chunk_path):
     try:
         print(f"[INFO] Starting inference for chunk: {chunk_path}")
-        result = validate_video(chunk_path, loader.raft_model, loader.fused_model, DEVICE, THRESHOLD)
+        result = validate_video(chunk_path, video.raft_model, video.fused_model, DEVICE, THRESHOLD)
         print(f"[INFO] Completed inference for chunk: {chunk_path}, probability: {result['probability']:.4f}")
         return {
             "chunk": os.path.basename(chunk_path),
