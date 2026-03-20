@@ -45,7 +45,6 @@ def root():
 
 origins = [
     "https://syntheticvideodetector.netlify.app",  # your frontend
-    "http://localhost:3000",  # optional for local dev
 ]
 
 app.add_middleware(
