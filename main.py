@@ -46,11 +46,3 @@ def root():
 origins = [
     "https://syntheticvideodetector.netlify.app",  # your frontend
 ]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
