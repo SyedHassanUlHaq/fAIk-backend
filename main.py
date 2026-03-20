@@ -43,9 +43,14 @@ app.include_router(scene.router, prefix="/api/v1/scene", tags=["Scene Detection"
 def root():
     return {"message": "API running", "version": app.version}
 
+origins = [
+    "https://syntheticvideodetector.netlify.app",  # your frontend
+    "http://localhost:3000",  # optional for local dev
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # or your frontend URL
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
