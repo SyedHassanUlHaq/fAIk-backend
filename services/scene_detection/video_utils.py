@@ -4,6 +4,7 @@ import os
 FPS20_DIR = "20 FPS Videos"
 
 def convert_to_fps(video_path, target_fps=20):
+    """Convert video to target FPS (default 20 fps)."""
     os.makedirs(FPS20_DIR, exist_ok=True)
 
     base_name = os.path.basename(video_path)

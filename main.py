@@ -16,7 +16,12 @@ os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 async def lifespan(app: FastAPI):
     print("[*] Loading models at startup...")
     load_models()
-    get_embedding_model()
+    model, processor, device = get_embedding_model()
+    
+    app.state.embedding_model = model
+    app.state.embedding_processor = processor
+    app.state.embedding_device = device
+    
     print("[+] All models loaded")
     yield
     print("[*] Server shutdown")

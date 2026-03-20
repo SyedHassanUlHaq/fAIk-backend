@@ -1,14 +1,32 @@
-from transformers import pipeline
+from transformers import AutoModel, AutoProcessor
+import torch
 
 _embedding_model = None
+_embedding_processor = None
+_embedding_device = None
 
 def get_embedding_model():
-    global _embedding_model
+    global _embedding_model, _embedding_processor, _embedding_device
+
     if _embedding_model is None:
-        _embedding_model = pipeline(
-            "image-feature-extraction",
-            model="nomic-ai/nomic-embed-vision-v1.5",
-            trust_remote_code=True,
-            device=-1  # CPU
+        print("[*] Loading embedding model...")
+
+        model_name = "nomic-ai/nomic-embed-vision-v1.5"
+
+        _embedding_device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        _embedding_processor = AutoProcessor.from_pretrained(
+            model_name,
+            trust_remote_code=True
         )
-    return _embedding_model
+
+        _embedding_model = AutoModel.from_pretrained(
+            model_name,
+            trust_remote_code=True
+        ).to(_embedding_device)
+
+        _embedding_model.eval()
+
+        print(f"[+] Embedding model loaded on {_embedding_device}")
+
+    return _embedding_model, _embedding_processor, _embedding_device
