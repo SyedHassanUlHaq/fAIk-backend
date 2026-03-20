@@ -37,11 +37,10 @@ async def detect_scenes(request: Request, video: UploadFile = File(...)):
 
     print(f"🧠 Model device: {device}")
 
-    # ✅ Stream upload to file
     upload_start = time.time()
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_file:
         total_size = 0
-        while chunk := await video.read(1024 * 1024):  # 1MB chunks
+        while chunk := await video.read(1024 * 1024): 
             tmp_file.write(chunk)
             total_size += len(chunk)
         tmp_path = tmp_file.name
@@ -51,21 +50,18 @@ async def detect_scenes(request: Request, video: UploadFile = File(...)):
     print(f"⏱️ Upload time: {round(time.time() - upload_start, 2)} sec")
 
     try:
-        # 🎬 Convert FPS
         convert_start = time.time()
         print("🎞️ Converting video to 20 FPS...")
         converted = convert_to_fps(tmp_path)
         print(f"✅ Converted video path: {converted}")
         print(f"⏱️ Conversion time: {round(time.time() - convert_start, 2)} sec")
 
-        # 🔍 Scene Detection
         detect_start = time.time()
         print("🔎 Running scene detection...")
         raw_results = detect_scene_changes(converted, model, processor, device)
         print(f"✅ Detection complete. Found {len(raw_results)} cuts")
         print(f"⏱️ Detection time: {round(time.time() - detect_start, 2)} sec")
 
-        # 🧾 Format results
         fps = 20
         formatted_results = []
 

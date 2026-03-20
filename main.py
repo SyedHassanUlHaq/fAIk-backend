@@ -42,3 +42,11 @@ app.include_router(scene.router, prefix="/api/v1/scene", tags=["Scene Detection"
 @app.get("/")
 def root():
     return {"message": "API running", "version": app.version}
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
