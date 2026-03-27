@@ -117,10 +117,14 @@ def compute_all_flows(raft_model: RAFT, device: str, frames: List[np.ndarray]) -
         flow_norm = np.clip(flow_resized, -20.0, 20.0) / 20.0
         return flow_norm.astype(np.float32)
 
-    flows = []
-    max_workers = min(len(proc) - 1, os.cpu_count() or 4)
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        flows = list(executor.map(compute_single_flow, range(len(proc) - 1)))
+    # GPU: sequential is faster — CUDA serializes ops and threads only add overhead.
+    # CPU: thread pool helps since PyTorch releases the GIL during computation.
+    if device == "cuda":
+        flows = [compute_single_flow(i) for i in range(len(proc) - 1)]
+    else:
+        max_workers = min(len(proc) - 1, os.cpu_count() or 4)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            flows = list(executor.map(compute_single_flow, range(len(proc) - 1)))
 
     flows = np.stack(flows, axis=0)  # (T-1, H, W, 2)
     return flows.transpose(0, 3, 1, 2)  # (T-1, 2, H, W)

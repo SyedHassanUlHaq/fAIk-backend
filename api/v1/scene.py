@@ -2,6 +2,8 @@ from ml_models.scene_detection import get_embedding_model
 from services.scene_detection.detector import detect_scene_changes
 from services.scene_detection.video_utils import convert_to_fps
 from fastapi import APIRouter, File, UploadFile, Request
+import asyncio
+import functools
 import os
 import tempfile
 import time
@@ -49,18 +51,24 @@ async def detect_scenes(request: Request, video: UploadFile = File(...)):
     print(f"📦 File size: {round(total_size / (1024*1024), 2)} MB")
     print(f"⏱️ Upload time: {round(time.time() - upload_start, 2)} sec")
 
+    loop = asyncio.get_event_loop()
+
     try:
         convert_start = time.time()
-        print("🎞️ Converting video to 20 FPS...")
-        converted = convert_to_fps(tmp_path)
-        print(f"✅ Converted video path: {converted}")
-        print(f"⏱️ Conversion time: {round(time.time() - convert_start, 2)} sec")
+        print("Converting video to 20 FPS...")
+        # Offload blocking CPU work so the event loop stays free for other requests
+        converted = await loop.run_in_executor(None, convert_to_fps, tmp_path)
+        print(f"Converted video path: {converted}")
+        print(f"Conversion time: {round(time.time() - convert_start, 2)} sec")
 
         detect_start = time.time()
-        print("🔎 Running scene detection...")
-        raw_results = detect_scene_changes(converted, model, processor, device)
-        print(f"✅ Detection complete. Found {len(raw_results)} cuts")
-        print(f"⏱️ Detection time: {round(time.time() - detect_start, 2)} sec")
+        print("Running scene detection...")
+        raw_results = await loop.run_in_executor(
+            None,
+            functools.partial(detect_scene_changes, converted, model, processor, device)
+        )
+        print(f"Detection complete. Found {len(raw_results)} cuts")
+        print(f"Detection time: {round(time.time() - detect_start, 2)} sec")
 
         fps = 20
         formatted_results = []

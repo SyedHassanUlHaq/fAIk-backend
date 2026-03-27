@@ -49,7 +49,7 @@ def split_video_into_chunks(input_path, output_dir, chunk_length=5):
         for future in as_completed(futures):
             chunks.append(future.result())
 
-    chunks.sort()
+    chunks.sort(key=lambda p: float(os.path.splitext(os.path.basename(p))[0].split("chunk_")[1].split("-")[0]))
     print(f"[INFO] Total chunks created: {len(chunks)}")
     return chunks
 

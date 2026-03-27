@@ -1,13 +1,13 @@
+import asyncio
 import os
 import uuid
 import json
-from fastapi import APIRouter, HTTPException
+from concurrent.futures import ThreadPoolExecutor
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from fastapi import UploadFile, File
 from repositories.validation_tool import validate_video
-from config.project_config import UPLOAD_DIR, THRESHOLD
+from config.project_config import UPLOAD_DIR, THRESHOLD, DEVICE
 from ml_models import video
 from helpers.video_helper import split_video_into_chunks, infer_chunk
 from datetime import datetime
@@ -32,29 +32,32 @@ async def upload_video(file: UploadFile = File(...)):
     for d in dirs:
         os.makedirs(os.path.join(folder_name, d), exist_ok=True)
 
+    loop = asyncio.get_event_loop()
+
     try:
         original_path = os.path.join(folder_name, "original", file.filename)
 
+        # Chunked upload: avoids loading the entire file into memory at once
         with open(original_path, "wb") as f:
-            content = await file.read()
-            f.write(content)
+            while chunk := await file.read(1024 * 1024):
+                f.write(chunk)
 
         print(f"[INFO] Saved uploaded file at: {original_path}")
 
         chunks_dir = os.path.join(folder_name, "videos")
-        chunks = split_video_into_chunks(original_path, chunks_dir, chunk_length=5)
 
-        chunk_results = []
-        total_prob = 0.0
+        chunks = await loop.run_in_executor(
+            None, split_video_into_chunks, original_path, chunks_dir, 5
+        )
 
-        max_workers = min(len(chunks), 2)
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(infer_chunk, c) for c in chunks]
+        def run_inference(chunks):
+            if DEVICE == "cuda":
+                return [infer_chunk(c) for c in chunks]
+            with ThreadPoolExecutor(max_workers=min(len(chunks), os.cpu_count() or 4)) as ex:
+                return list(ex.map(infer_chunk, chunks))
 
-            for future in as_completed(futures):
-                res = future.result()
-                chunk_results.append(res)
-                total_prob += res["result"].get("probability", 0.0)
+        chunk_results = await loop.run_in_executor(None, run_inference, chunks)
+        total_prob = sum(r["result"].get("probability", 0.0) for r in chunk_results)
 
         overall_prob = total_prob / len(chunks) if chunks else 0.0
         overall_prediction = "Fake" if overall_prob >= THRESHOLD else "Real"
@@ -89,7 +92,7 @@ async def upload_video(file: UploadFile = File(...)):
 
 @router.get("/results/{session_id}")
 def get_results(session_id: str):
-    result_path = f"sessions/{session_id}/results/probabilities.json"
+    result_path = os.path.join(UPLOAD_DIR, session_id, "results", "probabilities.json")
 
     if not os.path.exists(result_path):
         return JSONResponse(

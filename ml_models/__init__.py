@@ -5,8 +5,6 @@ from ml_models.video import (
     raft_model,
     fused_model,
     xclip_demamba,
-    clip_model,
-    clip_preprocess,
 )
 
 __all__ = [
@@ -14,6 +12,4 @@ __all__ = [
     "raft_model",
     "fused_model",
     "xclip_demamba",
-    "clip_model",
-    "clip_preprocess",
 ]
