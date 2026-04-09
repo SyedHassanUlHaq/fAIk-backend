@@ -1,0 +1,63 @@
+import os
+import json
+from concurrent.futures import ThreadPoolExecutor
+from celery import Celery
+from config.project_config import UPLOAD_DIR, THRESHOLD, DEVICE
+from ml_models import video
+from helpers.video_helper import split_video_into_chunks, infer_chunk
+
+celery_app = Celery(
+    "faik_tasks",
+    broker=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+    backend=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+)
+
+celery_app.conf.update(
+    task_serializer="json",
+    result_serializer="json",
+    accept_content=["json"],
+    task_track_started=True,
+)
+
+
+@celery_app.task(bind=True, name="tasks.process_video")
+def process_video_task(self, session_id: str, original_path: str, folder_name: str):
+    try:
+        self.update_state(state="PROGRESS", meta={"status": "splitting video into chunks"})
+
+        chunks_dir = os.path.join(folder_name, "videos")
+        chunks = split_video_into_chunks(original_path, chunks_dir, 5)
+
+        self.update_state(state="PROGRESS", meta={"status": "running inference", "total_chunks": len(chunks)})
+
+        def run_inference(chunks):
+            if DEVICE == "cuda":
+                return [infer_chunk(c) for c in chunks]
+            with ThreadPoolExecutor(max_workers=min(len(chunks), os.cpu_count() or 4)) as ex:
+                return list(ex.map(infer_chunk, chunks))
+
+        chunk_results = run_inference(chunks)
+        total_prob = sum(r["result"].get("probability", 0.0) for r in chunk_results)
+
+        overall_prob = total_prob / len(chunks) if chunks else 0.0
+        overall_prediction = "Fake" if overall_prob >= THRESHOLD else "Real"
+
+        result_payload = {
+            "session_id": session_id,
+            "chunks": chunk_results,
+            "overall": {
+                "probability": overall_prob,
+                "prediction": overall_prediction,
+                "threshold": THRESHOLD,
+            },
+        }
+
+        results_path = os.path.join(folder_name, "results", "probabilities.json")
+        with open(results_path, "w") as f:
+            json.dump(result_payload, f, indent=4)
+
+        return result_payload
+
+    except Exception as exc:
+        self.update_state(state="FAILURE", meta={"status": str(exc)})
+        raise

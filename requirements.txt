@@ -133,3 +133,5 @@ uvicorn==0.41.0
 wandb==0.25.1
 wcwidth==0.6.0
 Werkzeug==3.1.6
+celery[redis]>=5.3
+redis>=5.0
