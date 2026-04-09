@@ -20,7 +20,6 @@ class UserCreate(BaseModel):
             raise ValueError("Passwords do not match")
         return confirm_password
 
-
 class UserResponse(BaseModel):
     id: int
     first_name: str
@@ -33,7 +32,6 @@ class UserResponse(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
-
 
 class Token(BaseModel):
     access_token: str

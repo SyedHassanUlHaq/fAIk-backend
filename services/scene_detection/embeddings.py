@@ -3,10 +3,8 @@ import numpy as np
 import cv2
 from PIL import Image
 
-
 def cosine_similarity(a, b):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-
 
 def compute_embedding(frame, model, processor, device="cpu"):
     if frame is None:
@@ -23,7 +21,6 @@ def compute_embedding(frame, model, processor, device="cpu"):
 
     emb = outputs.last_hidden_state.mean(dim=1)
     return emb.squeeze().cpu().numpy()
-
 
 def compute_embeddings_batch(frames, model, processor, device="cpu"):
     """Compute embeddings for multiple frames in a single forward pass."""

@@ -2,10 +2,6 @@ import threading
 from transformers import AutoModel, AutoProcessor
 import torch
 
-_embedding_model = None
-_embedding_processor = None
-_embedding_device = None
-
 _load_lock = threading.Lock()
 
 def get_embedding_model():

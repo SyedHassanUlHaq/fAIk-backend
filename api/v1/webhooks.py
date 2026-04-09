@@ -7,6 +7,10 @@ from models.payments import Payment
 
 router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
 
+#----------------------------------------------------------------------------------------
+# Stripe Webhook Endpoint
+#----------------------------------------------------------------------------------------
+
 @router.post("/stripe")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     payload = await request.body()

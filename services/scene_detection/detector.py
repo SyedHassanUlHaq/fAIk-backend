@@ -5,10 +5,8 @@ from skimage.metrics import structural_similarity as ssim
 
 from .embeddings import compute_embeddings_batch, cosine_similarity
 
-
 def mse(a, b):
     return np.mean((a.astype("float") - b.astype("float")) ** 2)
-
 
 def detect_scene_changes(video_path, model, processor, device, compute_emb_only_on_candidates=True):
     cap = cv2.VideoCapture(video_path)

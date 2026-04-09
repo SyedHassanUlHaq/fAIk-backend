@@ -11,10 +11,16 @@ from tasks.video_tasks import process_video_task
 
 router = APIRouter()
 
+#----------------------------------------------------------------------------------------
+# Video Analysis Schemas
+#----------------------------------------------------------------------------------------
 
 class VideoRequest(BaseModel):
     video_path: str
 
+#----------------------------------------------------------------------------------------
+# Video Analysis Endpoints
+#----------------------------------------------------------------------------------------
 
 @router.post("/upload-video")
 async def upload_video(file: UploadFile = File(...)):

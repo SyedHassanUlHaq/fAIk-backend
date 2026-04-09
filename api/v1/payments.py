@@ -4,6 +4,10 @@ from schemas.schemas import PaymentIntentCreate
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 
+#----------------------------------------------------------------------------------------
+# Stripe Configuration
+#----------------------------------------------------------------------------------------
+
 @router.post("/create-payment-intent")
 def create_payment_intent(payload: PaymentIntentCreate):
     try:

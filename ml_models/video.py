@@ -5,27 +5,17 @@ from repositories.validation_tool.models.fused_model import FusedHeadModel
 from repositories.validation_tool.validate import load_raft_model
 from config.project_config import CHECKPOINT, DEVICE
 
-raft_model = None
-fused_model = None
-xclip_demamba = None
-
 _load_lock = threading.Lock()
 
 def load_models():
     global raft_model, fused_model, xclip_demamba
 
     with _load_lock:
-        # --------------------------
-        # RAFT
-        # --------------------------
         if raft_model is None:
             print("[*] Loading RAFT model...")
             raft_model = load_raft_model("repositories/validation_tool/checkpoints/raft-sintel.pth", DEVICE)
             print("[+] RAFT model loaded")
 
-        # --------------------------
-        # XCLIP Vision
-        # --------------------------
         if xclip_demamba is None:
             print("[*] Loading XCLIPVisionModel + DeMamba...")
             xclip_encoder = XCLIPVisionModel.from_pretrained(
@@ -36,9 +26,6 @@ def load_models():
             xclip_demamba.eval()
             print("[+] XCLIPVisionModel + DeMamba loaded")
 
-        # --------------------------
-        # FusedHeadModel
-        # --------------------------
         if fused_model is None:
             print("[*] Loading FusedHeadModel...")
             fused_model = FusedHeadModel(pretrained_xclip_encoder=xclip_demamba).to(DEVICE)

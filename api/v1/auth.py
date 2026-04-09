@@ -15,6 +15,10 @@ load_dotenv()
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+#----------------------------------------------------------------------------------------
+# Signup, Login, OTP, Password Reset Endpoints
+#----------------------------------------------------------------------------------------
+
 @router.post("/signup-request")
 async def signup_request(user: schemas.OTPRequest, db: Session = Depends(get_db)):
     if crud.get_user_by_email(db, user.email):
@@ -97,9 +101,12 @@ def reset_password_verify(payload: schemas.ResetPasswordVerify, db: Session = De
 oauth = OAuth()
 CONF_URL = "https://accounts.google.com/.well-known/openid-configuration"
 
-# Configure OAuth
+#----------------------------------------------------------------------------------------
+# OAuth Configuration
+#----------------------------------------------------------------------------------------
 
-# Google
+## Google
+
 oauth.register(
     name="google",
     client_id=os.getenv("GOOGLE_CLIENT_ID"),
@@ -108,7 +115,8 @@ oauth.register(
     client_kwargs={"scope": "openid email profile"},
 )
 
-# Facebook
+## Facebook
+
 oauth.register(
     name="facebook",
     client_id=os.getenv("FACEBOOK_CLIENT_ID"),
@@ -118,7 +126,8 @@ oauth.register(
     client_kwargs={"scope": "email public_profile"},
 )
 
-# Microsoft / Outlook
+## Microsoft
+
 oauth.register(
     name="microsoft",
     client_id=os.getenv("MICROSOFT_CLIENT_ID"),
@@ -129,6 +138,10 @@ oauth.register(
 )
 
 OAUTH_PROVIDERS = ["google", "facebook", "microsoft"]
+
+#----------------------------------------------------------------------------------------
+# OAuth Endpoints
+#----------------------------------------------------------------------------------------
 
 @router.get("/{provider}/login")
 async def oauth_login(provider: str, request: Request):
@@ -150,12 +163,14 @@ async def oauth_callback(provider: str, request: Request, db: Session = Depends(
         email = user_info["email"]
         first_name = user_info.get("given_name", "")
         last_name = user_info.get("family_name", "")
+        
     elif provider == "facebook":
         resp = await oauth.facebook.get("https://graph.facebook.com/me?fields=id,email,first_name,last_name", token=token)
         data = resp.json()
         email = data["email"]
         first_name = data["first_name"]
         last_name = data["last_name"]
+        
     elif provider == "microsoft":
         resp = await oauth.microsoft.get("https://graph.microsoft.com/v1.0/me", token=token)
         data = resp.json()

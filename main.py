@@ -9,7 +9,6 @@ from ml_models.scene_detection import get_embedding_model
 from fastapi.middleware.cors import CORSMiddleware
 load_dotenv()
 
-# Set PyTorch CUDA memory management
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
 @asynccontextmanager

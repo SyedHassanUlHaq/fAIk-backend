@@ -10,6 +10,9 @@ import time
 
 router = APIRouter()
 
+#----------------------------------------------------------------------------------------
+# Scene Detection Utilities
+#----------------------------------------------------------------------------------------
 
 def format_timestamp(seconds: float):
     mins = int(seconds // 60)
@@ -25,6 +28,9 @@ def get_strength(val, type_):
     if type_ == "emb":
         return "high" if val > 0.2 else "moderate"
 
+#----------------------------------------------------------------------------------------
+# Scene Detection Endpoints
+#----------------------------------------------------------------------------------------
 
 @router.post("/detect-scenes")
 async def detect_scenes(request: Request, video: UploadFile = File(...)):

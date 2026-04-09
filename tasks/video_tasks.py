@@ -19,7 +19,6 @@ celery_app.conf.update(
     task_track_started=True,
 )
 
-
 @celery_app.task(bind=True, name="tasks.process_video")
 def process_video_task(self, session_id: str, original_path: str, folder_name: str):
     try:
