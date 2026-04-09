@@ -1,6 +1,9 @@
 import threading
+import logging
 from transformers import AutoModel, AutoProcessor
 import torch
+
+logger = logging.getLogger(__name__)
 
 _load_lock = threading.Lock()
 
@@ -8,25 +11,29 @@ def get_embedding_model():
     global _embedding_model, _embedding_processor, _embedding_device
 
     with _load_lock:
-        if _embedding_model is None:
-            print("[*] Loading embedding model...")
+        try:
+            if _embedding_model is None:
+                print("[*] Loading embedding model...")
 
-            model_name = "nomic-ai/nomic-embed-vision-v1.5"
+                model_name = "nomic-ai/nomic-embed-vision-v1.5"
 
-            _embedding_device = "cuda" if torch.cuda.is_available() else "cpu"
+                _embedding_device = "cuda" if torch.cuda.is_available() else "cpu"
 
-            _embedding_processor = AutoProcessor.from_pretrained(
-                model_name,
-                trust_remote_code=True
-            )
+                _embedding_processor = AutoProcessor.from_pretrained(
+                    model_name,
+                    trust_remote_code=True
+                )
 
-            _embedding_model = AutoModel.from_pretrained(
-                model_name,
-                trust_remote_code=True
-            ).to(_embedding_device)
+                _embedding_model = AutoModel.from_pretrained(
+                    model_name,
+                    trust_remote_code=True
+                ).to(_embedding_device)
 
-            _embedding_model.eval()
+                _embedding_model.eval()
 
-            print(f"[+] Embedding model loaded on {_embedding_device}")
+                print(f"[+] Embedding model loaded on {_embedding_device}")
+        except Exception as e:
+            logger.error(f"Failed to load embedding model: {e}", exc_info=True)
+            raise
 
     return _embedding_model, _embedding_processor, _embedding_device

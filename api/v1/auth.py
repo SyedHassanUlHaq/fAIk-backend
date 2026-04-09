@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from authlib.integrations.starlette_client import OAuth
 from sqlalchemy.orm import Session
+import logging
 from database import get_db
 import schemas.schemas as schemas, crud
 from utils.jwt import create_access_token
@@ -13,6 +14,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 #----------------------------------------------------------------------------------------
@@ -21,82 +24,113 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/signup-request")
 async def signup_request(user: schemas.OTPRequest, db: Session = Depends(get_db)):
-    if crud.get_user_by_email(db, user.email):
-        raise HTTPException(status_code=400, detail="Email already registered")
-    if user.password != user.confirm_password:
-        raise HTTPException(status_code=400, detail="Passwords do not match")
+    try:
+        if crud.get_user_by_email(db, user.email):
+            raise HTTPException(status_code=400, detail="Email already registered")
+        if user.password != user.confirm_password:
+            raise HTTPException(status_code=400, detail="Passwords do not match")
 
-    otp = generate_otp()
-    store_otp(user.email, otp, user.dict(exclude={"confirm_password"}))
-    await send_otp_email(user.email, otp)
-    return {"detail": "OTP sent to your email. It will expire in 5 minutes."}
+        otp = generate_otp()
+        store_otp(user.email, otp, user.dict(exclude={"confirm_password"}))
+        await send_otp_email(user.email, otp)
+        return {"detail": "OTP sent to your email. It will expire in 5 minutes."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during signup request for {user.email}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to process signup request")
 
 @router.post("/verify-otp")
 def verify_otp_endpoint(payload: schemas.OTPVerify, db: Session = Depends(get_db)):
-    valid, data_or_msg = verify_otp(payload.email, payload.otp)
-    if not valid:
-        raise HTTPException(status_code=400, detail=data_or_msg)
+    try:
+        valid, data_or_msg = verify_otp(payload.email, payload.otp)
+        if not valid:
+            raise HTTPException(status_code=400, detail=data_or_msg)
 
-    user_data = data_or_msg
-    db_user = crud.create_user(db, schemas.UserCreate(**user_data, confirm_password=user_data["password"]))
+        user_data = data_or_msg
+        db_user = crud.create_user(db, schemas.UserCreate(**user_data, confirm_password=user_data["password"]))
 
-    delete_otp(payload.email)
+        delete_otp(payload.email)
 
-    return {"detail": "User created successfully", "user": {
-        "id": db_user.id,
-        "first_name": db_user.first_name,
-        "last_name": db_user.last_name,
-        "email": db_user.email
-    }}
+        return {"detail": "User created successfully", "user": {
+            "id": db_user.id,
+            "first_name": db_user.first_name,
+            "last_name": db_user.last_name,
+            "email": db_user.email
+        }}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error verifying OTP for {payload.email}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to verify OTP")
     
 @router.post("/login", response_model=schemas.Token)
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
-    authenticated_user = crud.authenticate_user(db, user.email, user.password)
+    try:
+        authenticated_user = crud.authenticate_user(db, user.email, user.password)
 
-    if not authenticated_user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
+        if not authenticated_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password"
+            )
+
+        access_token = create_access_token(
+            data={"sub": str(authenticated_user.id)}
         )
 
-    access_token = create_access_token(
-        data={"sub": str(authenticated_user.id)}
-    )
-
-    return {
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+        return {
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during login for {user.email}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to process login")
     
 @router.post("/reset-password-request")
 async def reset_password_request(payload: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
-    user = crud.get_user_by_email(db, payload.email)
-    if not user:
-        raise HTTPException(status_code=400, detail="Email not registered")
+    try:
+        user = crud.get_user_by_email(db, payload.email)
+        if not user:
+            raise HTTPException(status_code=400, detail="Email not registered")
 
-    otp = generate_otp()
-    store_otp(payload.email, otp, {"email": payload.email})
+        otp = generate_otp()
+        store_otp(payload.email, otp, {"email": payload.email})
 
-    await send_otp_email(payload.email, otp)
-    return {"detail": "OTP sent to your email. It will expire in 5 minutes."}
+        await send_otp_email(payload.email, otp)
+        return {"detail": "OTP sent to your email. It will expire in 5 minutes."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during reset password request for {payload.email}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to process reset password request")
 
 
 @router.post("/reset-password-verify")
 def reset_password_verify(payload: schemas.ResetPasswordVerify, db: Session = Depends(get_db)):
-    valid, data_or_msg = verify_otp(payload.email, payload.otp)
-    if not valid:
-        raise HTTPException(status_code=400, detail=data_or_msg)
+    try:
+        valid, data_or_msg = verify_otp(payload.email, payload.otp)
+        if not valid:
+            raise HTTPException(status_code=400, detail=data_or_msg)
 
-    user = crud.get_user_by_email(db, payload.email)
-    if not user:
-        raise HTTPException(status_code=400, detail="User not found")
+        user = crud.get_user_by_email(db, payload.email)
+        if not user:
+            raise HTTPException(status_code=400, detail="User not found")
 
-    user.hashed_password = hash_password(payload.new_password)
-    db.commit()
+        user.hashed_password = hash_password(payload.new_password)
+        db.commit()
 
-    delete_otp(payload.email)
+        delete_otp(payload.email)
 
-    return {"detail": "Password reset successfully"}
+        return {"detail": "Password reset successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during reset password verify for {payload.email}: {e}", exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to reset password")
 
 oauth = OAuth()
 CONF_URL = "https://accounts.google.com/.well-known/openid-configuration"
@@ -153,47 +187,53 @@ async def oauth_login(provider: str, request: Request):
 
 @router.get("/{provider}/callback")
 async def oauth_callback(provider: str, request: Request, db: Session = Depends(get_db)):
-    if provider not in OAUTH_PROVIDERS:
-        raise HTTPException(status_code=400, detail="Unsupported provider")
+    try:
+        if provider not in OAUTH_PROVIDERS:
+            raise HTTPException(status_code=400, detail="Unsupported provider")
 
-    token = await oauth.create_client(provider).authorize_access_token(request)
-    
-    if provider == "google":
-        user_info = token.get("userinfo") or await oauth.google.parse_id_token(request, token)
-        email = user_info["email"]
-        first_name = user_info.get("given_name", "")
-        last_name = user_info.get("family_name", "")
+        token = await oauth.create_client(provider).authorize_access_token(request)
         
-    elif provider == "facebook":
-        resp = await oauth.facebook.get("https://graph.facebook.com/me?fields=id,email,first_name,last_name", token=token)
-        data = resp.json()
-        email = data["email"]
-        first_name = data["first_name"]
-        last_name = data["last_name"]
-        
-    elif provider == "microsoft":
-        resp = await oauth.microsoft.get("https://graph.microsoft.com/v1.0/me", token=token)
-        data = resp.json()
-        email = data.get("userPrincipalName", f"user_{data['id']}@example.com")
-        first_name = data.get("givenName", "")
-        last_name = data.get("surname", "")
+        if provider == "google":
+            user_info = token.get("userinfo") or await oauth.google.parse_id_token(request, token)
+            email = user_info["email"]
+            first_name = user_info.get("given_name", "")
+            last_name = user_info.get("family_name", "")
+            
+        elif provider == "facebook":
+            resp = await oauth.facebook.get("https://graph.facebook.com/me?fields=id,email,first_name,last_name", token=token)
+            data = resp.json()
+            email = data["email"]
+            first_name = data["first_name"]
+            last_name = data["last_name"]
+            
+        elif provider == "microsoft":
+            resp = await oauth.microsoft.get("https://graph.microsoft.com/v1.0/me", token=token)
+            data = resp.json()
+            email = data.get("userPrincipalName", f"user_{data['id']}@example.com")
+            first_name = data.get("givenName", "")
+            last_name = data.get("surname", "")
 
-    user = crud.get_user_by_email(db, email)
-    if not user:
-        random_pass = "".join(random.choices(string.ascii_letters + string.digits, k=12))
-        user = crud.create_user(db, schemas.UserCreate(
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
-            password=random_pass,
-            confirm_password=random_pass
-        ))
+        user = crud.get_user_by_email(db, email)
+        if not user:
+            random_pass = "".join(random.choices(string.ascii_letters + string.digits, k=12))
+            user = crud.create_user(db, schemas.UserCreate(
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                password=random_pass,
+                confirm_password=random_pass
+            ))
 
-    access_token = create_access_token(data={"sub": str(user.id)})
+        access_token = create_access_token(data={"sub": str(user.id)})
 
-    return {"access_token": access_token, "token_type": "bearer", "user": {
-        "id": user.id,
-        "first_name": user.first_name,
-        "last_name": user.last_name,
-        "email": user.email
-    }}
+        return {"access_token": access_token, "token_type": "bearer", "user": {
+            "id": user.id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email
+        }}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during {provider} OAuth callback: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to authenticate with {provider}")

@@ -1,29 +1,45 @@
 from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 import os
+import logging
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 from api.v1 import payments, webhooks, auth, video, scene
 from ml_models.video import load_models
 from ml_models.scene_detection import get_embedding_model
 from fastapi.middleware.cors import CORSMiddleware
+
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("[*] Loading models at startup...")
-    load_models()
-    model, processor, device = get_embedding_model()
+    try:
+        print("[*] Loading models at startup...")
+        load_models()
+        try:
+            model, processor, device = get_embedding_model()
+            app.state.embedding_model = model
+            app.state.embedding_processor = processor
+            app.state.embedding_device = device
+            print("[+] All models loaded")
+        except Exception as e:
+            logger.error(f"Failed to load embedding model: {e}", exc_info=True)
+            app.state.embedding_model = None
+            app.state.embedding_processor = None
+            app.state.embedding_device = None
+    except Exception as e:
+        logger.error(f"Failed to load video models: {e}", exc_info=True)
     
-    app.state.embedding_model = model
-    app.state.embedding_processor = processor
-    app.state.embedding_device = device
-    
-    print("[+] All models loaded")
     yield
-    print("[*] Server shutdown")
+    
+    try:
+        print("[*] Server shutdown")
+    except Exception as e:
+        logger.error(f"Error during shutdown: {e}", exc_info=True)
 
 app = FastAPI(title="fAIk Backend API", version="1.0", lifespan=lifespan)
 
