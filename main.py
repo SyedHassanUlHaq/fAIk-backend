@@ -43,5 +43,5 @@ def root():
     return {"message": "API running", "version": app.version}
 
 origins = [
-    "https://syntheticvideodetector.netlify.app",  # your frontend
+    "https://syntheticvideodetector.netlify.app",
 ]
