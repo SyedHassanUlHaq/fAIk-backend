@@ -11,17 +11,12 @@ Label Convention:
     1 = Fake
 """
 import os
-import sys
 from typing import List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import cv2
 import numpy as np
 import torch
-
-# Add validation directory to path
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, THIS_DIR)
 
 from repositories.validation_tool.raft.raft import RAFT
 from repositories.validation_tool.raft.utils.utils import InputPadder
