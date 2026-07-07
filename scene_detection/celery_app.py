@@ -2,10 +2,10 @@ from celery import Celery
 from config.project_config import REDIS_URL
 
 celery_app = Celery(
-    "faik-voice-ai",
+    "faik-scene-detection",
     broker=REDIS_URL,
     backend=REDIS_URL,
-    include=["tasks.audio_scan_task"],
+    include=["tasks.tamper_scan_task"],
 )
 
 celery_app.conf.update(
