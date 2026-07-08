@@ -20,6 +20,14 @@ class AppleAuthRequest(BaseModel):
     fullName: dict | None = None   # {"givenName": "...", "familyName": "..."}
 
 
+class FacebookAuthRequest(BaseModel):
+    accessToken: str   # user access token from the Facebook Login SDK
+
+
+class OutlookAuthRequest(BaseModel):
+    idToken: str   # Microsoft identity platform (Azure AD) id_token, JWT
+
+
 class RefreshRequest(BaseModel):
     refreshToken: str
 

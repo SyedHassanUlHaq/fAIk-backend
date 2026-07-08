@@ -23,6 +23,10 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 # --- OAuth ---
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 APPLE_CLIENT_ID = os.getenv("APPLE_CLIENT_ID")   # Bundle ID / Service ID
+FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID")
+FACEBOOK_APP_SECRET = os.getenv("FACEBOOK_APP_SECRET")
+MICROSOFT_CLIENT_ID = os.getenv("MICROSOFT_CLIENT_ID")   # Azure AD app (client) ID — used for Outlook auth
+MICROSOFT_TENANT_ID = os.getenv("MICROSOFT_TENANT_ID", "common")   # "common" allows personal + work/school accounts
 
 # --- AWS S3 ---
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")

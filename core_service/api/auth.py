@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 import os
 import random
 import string
@@ -8,10 +10,14 @@ from fastapi import APIRouter, Depends
 from jose import jwt as jose_jwt, JWTError
 from sqlalchemy.orm import Session
 
-from config.project_config import GOOGLE_CLIENT_ID, APPLE_CLIENT_ID, ALGORITHM
+from config.project_config import (
+    GOOGLE_CLIENT_ID, APPLE_CLIENT_ID, ALGORITHM,
+    FACEBOOK_APP_SECRET, MICROSOFT_CLIENT_ID, MICROSOFT_TENANT_ID,
+)
 from schemas.auth import (
     SignUpRequest, SignInRequest, GoogleAuthRequest,
-    AppleAuthRequest, RefreshRequest, ForgotPasswordRequest, ResetPasswordRequest,
+    AppleAuthRequest, FacebookAuthRequest, OutlookAuthRequest,
+    RefreshRequest, ForgotPasswordRequest, ResetPasswordRequest,
 )
 from database import get_db
 from models.refresh_token import RefreshToken
@@ -168,6 +174,77 @@ def apple_auth(payload: AppleAuthRequest, db: Session = Depends(get_db)):
     name = f"{given} {family}".strip() or None
 
     user = _get_or_create_oauth_user(db, email, name)
+    return _issue_tokens(user, db)
+
+
+@router.post("/facebook")
+def facebook_auth(payload: FacebookAuthRequest, db: Session = Depends(get_db)):
+    if not FACEBOOK_APP_SECRET:
+        raise AppError("SERVER_ERROR", "Facebook auth is not configured.", 500)
+
+    # appsecret_proof ties the call to our app secret, so Facebook rejects
+    # tokens that weren't issued for this app.
+    proof = hmac.new(
+        FACEBOOK_APP_SECRET.encode(), payload.accessToken.encode(), hashlib.sha256
+    ).hexdigest()
+
+    try:
+        resp = http_requests.get(
+            "https://graph.facebook.com/me",
+            params={
+                "fields": "id,name,email,first_name,last_name",
+                "access_token": payload.accessToken,
+                "appsecret_proof": proof,
+            },
+            timeout=5,
+        )
+        info = resp.json()
+        if "error" in info:
+            raise ValueError(info["error"].get("message", "Facebook rejected the token."))
+    except Exception as e:
+        raise AppError("UNAUTHORIZED", f"Invalid Facebook token: {e}", 401)
+
+    email = info.get("email")
+    if not email:
+        raise AppError("UNAUTHORIZED", "Facebook token did not include an email.", 401)
+
+    given = info.get("first_name", "")
+    family = info.get("last_name", "")
+    name = f"{given} {family}".strip() or info.get("name")
+
+    user = _get_or_create_oauth_user(db, email, name)
+    return _issue_tokens(user, db)
+
+
+@router.post("/outlook")
+def outlook_auth(payload: OutlookAuthRequest, db: Session = Depends(get_db)):
+    try:
+        # Fetch Microsoft identity platform JWKS
+        jwks_resp = http_requests.get(
+            f"https://login.microsoftonline.com/{MICROSOFT_TENANT_ID}/discovery/v2.0/keys", timeout=5
+        )
+        jwks = jwks_resp.json()
+
+        header = jose_jwt.get_unverified_header(payload.idToken)
+        key = next((k for k in jwks["keys"] if k["kid"] == header.get("kid")), None)
+        if not key:
+            raise ValueError("Matching Microsoft public key not found.")
+
+        info = jose_jwt.decode(
+            payload.idToken,
+            key,
+            algorithms=["RS256"],
+            audience=MICROSOFT_CLIENT_ID,
+            options={"verify_at_hash": False},
+        )
+    except Exception as e:
+        raise AppError("UNAUTHORIZED", f"Invalid Outlook token: {e}", 401)
+
+    email = info.get("email") or info.get("preferred_username")
+    if not email:
+        raise AppError("UNAUTHORIZED", "Outlook token did not include an email.", 401)
+
+    user = _get_or_create_oauth_user(db, email, info.get("name"))
     return _issue_tokens(user, db)
 
 
