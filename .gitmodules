@@ -1,0 +1,3 @@
+[submodule "lipsync-detector"]
+	path = lipsync-detector
+	url = git@github.com:SyedHassanUlHaq/lipsync-detector.git
