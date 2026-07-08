@@ -42,6 +42,21 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
+# --- In-App Purchase: Apple (required for App Store review — see api/subscriptions.py) ---
+APPLE_ISSUER_ID = os.getenv("APPLE_ISSUER_ID")
+APPLE_IAP_KEY_ID = os.getenv("APPLE_IAP_KEY_ID")
+APPLE_IAP_PRIVATE_KEY_PATH = os.getenv("APPLE_IAP_PRIVATE_KEY_PATH")   # path to the .p8 key from App Store Connect
+APPLE_ROOT_CERTS_DIR = os.getenv("APPLE_ROOT_CERTS_DIR")   # dir of Apple root CA .cer files
+APPLE_ENVIRONMENT = os.getenv("APPLE_ENVIRONMENT", "Sandbox")   # "Sandbox" or "Production"
+APPLE_PRODUCT_PRO = os.getenv("APPLE_PRODUCT_PRO")
+APPLE_PRODUCT_TEAM = os.getenv("APPLE_PRODUCT_TEAM")
+
+# --- In-App Purchase: Google Play (required for Play Store review — see api/subscriptions.py) ---
+GOOGLE_PLAY_PACKAGE_NAME = os.getenv("GOOGLE_PLAY_PACKAGE_NAME")
+GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_PATH = os.getenv("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_PATH")
+GOOGLE_PLAY_PRODUCT_PRO = os.getenv("GOOGLE_PLAY_PRODUCT_PRO")
+GOOGLE_PLAY_PRODUCT_TEAM = os.getenv("GOOGLE_PLAY_PRODUCT_TEAM")
+
 # --- Model metadata (surfaced in user/stats responses) ---
 MODEL_VERSION = os.getenv("MODEL_VERSION", "v3.2")
 

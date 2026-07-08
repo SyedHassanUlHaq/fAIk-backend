@@ -71,7 +71,7 @@ def check_schemas_import():
     from schemas.auth import SignUpRequest, SignInRequest, RefreshRequest  # noqa: F401
     from schemas.feedback import FeedbackRequest  # noqa: F401
     from schemas.scans import UrlScanRequest  # noqa: F401
-    from schemas.subscriptions import SubscribeRequest  # noqa: F401
+    from schemas.subscriptions import SubscribeRequest, AppleVerifyRequest, GoogleVerifyRequest  # noqa: F401
     from schemas.users import UpdateProfileRequest  # noqa: F401
 
 
@@ -80,6 +80,8 @@ def check_utils_import():
     from utils.s3 import upload_file, download_file, delete_file, presigned_url  # noqa: F401
     from utils.push import send_push  # noqa: F401
     from utils.deps import get_current_user  # noqa: F401
+    from utils.apple_iap import get_transaction, decode_notification, status_from_transaction  # noqa: F401
+    from utils.google_play import get_subscription_purchase, status_from_purchase, line_item  # noqa: F401
     from utils import (  # noqa: F401
         create_access_token, send_otp_email, generate_otp,
         hash_password, verify_password, store_otp, verify_otp, delete_otp,
