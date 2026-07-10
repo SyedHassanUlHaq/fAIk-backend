@@ -10,6 +10,7 @@ from schemas.notifications import SendNotificationRequest
 from utils.deps import get_current_user
 from utils.errors import AppError
 from utils.notification_templates import NOTIFICATION_TEMPLATES
+from utils.push import send_push
 
 router = APIRouter()
 
@@ -68,7 +69,11 @@ def send_notification(
     db.commit()
     db.refresh(notification)
 
-    return _notification_response(notification)
+    push_attempted = bool(target.push_token)
+    if push_attempted:
+        send_push(target.push_token, title, body, data={"template": payload.template, **payload.data})
+
+    return {**_notification_response(notification), "pushAttempted": push_attempted}
 
 
 @router.get("")
