@@ -1,0 +1,42 @@
+version: "3.9"
+
+# Runs on the GPU instance. All three containers share the host GPU
+# via the NVIDIA Container Toolkit (runtime: nvidia).
+# Model weights are bind-mounted from the host so they are not
+# duplicated inside each image.
+
+x-worker-base: &worker-base
+  restart: unless-stopped
+  runtime: nvidia
+  environment:
+    NVIDIA_VISIBLE_DEVICES: all
+    AWS_REGION: ${AWS_REGION}
+    SQS_RESULT_QUEUE_URL: ${SQS_RESULT_QUEUE_URL}
+    IDLE_TIMEOUT_SECONDS: "600"
+  volumes:
+    - /home/ubuntu/worker.py:/app/worker.py:ro
+    - /home/ubuntu/saved_models:/app/saved_models:ro
+    - /home/ubuntu/checkpoints:/app/checkpoints:ro
+
+services:
+
+  video-worker:
+    <<: *worker-base
+    build: /home/ubuntu/repo-video
+    environment:
+      WORKER_TYPE: video
+      SQS_QUEUE_URL: ${SQS_URL_VIDEO}
+
+  audio-worker:
+    <<: *worker-base
+    build: /home/ubuntu/repo-audio
+    environment:
+      WORKER_TYPE: audio
+      SQS_QUEUE_URL: ${SQS_URL_AUDIO}
+
+  lipsync-worker:
+    <<: *worker-base
+    build: /home/ubuntu/repo-lipsync
+    environment:
+      WORKER_TYPE: lipsync
+      SQS_QUEUE_URL: ${SQS_URL_LIPSYNC}
