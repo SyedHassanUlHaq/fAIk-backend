@@ -1,3 +1,7 @@
 [submodule "lipsync-detector"]
 	path = lipsync-detector
 	url = git@github.com:SyedHassanUlHaq/lipsync-detector.git
+
+[submodule "core_service"]
+	path = core_service
+	url = git@github.com:SyedHassanUlHaq/FaikCoreService.git

@@ -18,7 +18,7 @@ set -euo pipefail
 
 # ---------- CONFIGURE THESE ----------
 AMI_ID="ami-XXXXXXXXXXXXXXXXX"   # GPU AMI (Docker + NVIDIA toolkit installed)
-KEY_NAME="your-key-pair"
+KEY_NAME="faik-key.pem"
 SECURITY_GROUP_ID="sg-05bb33eaf125e1d75"
 SUBNET_ID="subnet-09b4acea93ecf055b"
 BUCKET="faik-production"
