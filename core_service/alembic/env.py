@@ -5,8 +5,7 @@ from alembic import context
 import os
 from config.project_config import DATABASE_URL
 from database import Base
-from models.payments import Payment  # Import your models here
-from models.user import User  # Import your models here
+import models  # noqa: F401 - imports every model so target_metadata sees all tables
 
 # Alembic config
 config = context.config
