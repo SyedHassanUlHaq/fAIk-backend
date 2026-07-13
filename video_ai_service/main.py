@@ -23,7 +23,7 @@ async def lifespan(_app: FastAPI):
     print("[*] Video AI service shutdown")
 
 
-app = FastAPI(title="fAIk Video AI Service", version="1.0", lifespan=lifespan)
+app = FastAPI(title="5dot Video AI Service", version="1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,4 +47,4 @@ app.include_router(video.router, prefix="/v1/video", tags=["Video AI"])
 
 @app.get("/")
 def root():
-    return {"message": "fAIk Video AI Service running", "version": app.version}
+    return {"message": "5dot Video AI Service running", "version": app.version}

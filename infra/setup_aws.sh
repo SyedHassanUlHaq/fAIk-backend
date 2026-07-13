@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# fAIk AWS infrastructure setup
+# 5dot AWS infrastructure setup
 # Run once to create all SQS queues, IAM roles, Launch Templates,
 # Auto Scaling Groups, and CloudWatch alarms.
 #
@@ -18,10 +18,10 @@ set -euo pipefail
 
 # ---------- CONFIGURE THESE ----------
 AMI_ID="ami-XXXXXXXXXXXXXXXXX"   # GPU AMI (Docker + NVIDIA toolkit installed)
-KEY_NAME="faik-key.pem"
+KEY_NAME="5dot-key.pem"
 SECURITY_GROUP_ID="sg-05bb33eaf125e1d75"
 SUBNET_ID="subnet-09b4acea93ecf055b"
-BUCKET="faik-production"
+BUCKET="5dot-production"
 REGION="ap-southeast-1"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 # -------------------------------------
@@ -69,7 +69,7 @@ echo "    Results : $RESULT_URL"
 echo "==> Creating IAM role for GPU workers..."
 
 aws iam create-role \
-    --role-name faik-gpu-worker-role \
+    --role-name 5dot-gpu-worker-role \
     --assume-role-policy-document '{
       "Version":"2012-10-17",
       "Statement":[{
@@ -80,8 +80,8 @@ aws iam create-role \
     }' 2>/dev/null || echo "    Role already exists, skipping."
 
 aws iam put-role-policy \
-    --role-name faik-gpu-worker-role \
-    --policy-name faik-gpu-worker-policy \
+    --role-name 5dot-gpu-worker-role \
+    --policy-name 5dot-gpu-worker-policy \
     --policy-document "{
       \"Version\":\"2012-10-17\",
       \"Statement\":[
@@ -109,7 +109,7 @@ aws iam put-role-policy \
           \"Effect\":\"Allow\",
           \"Action\":[\"ec2:TerminateInstances\"],
           \"Resource\":\"*\",
-          \"Condition\":{\"StringEquals\":{\"ec2:ResourceTag/Role\":\"faik-gpu-worker\"}}
+          \"Condition\":{\"StringEquals\":{\"ec2:ResourceTag/Role\":\"5dot-gpu-worker\"}}
         },
         {
           \"Effect\":\"Allow\",
@@ -120,12 +120,12 @@ aws iam put-role-policy \
     }"
 
 aws iam create-instance-profile \
-    --instance-profile-name faik-gpu-worker-profile 2>/dev/null || true
+    --instance-profile-name 5dot-gpu-worker-profile 2>/dev/null || true
 aws iam add-role-to-instance-profile \
-    --instance-profile-name faik-gpu-worker-profile \
-    --role-name faik-gpu-worker-role 2>/dev/null || true
+    --instance-profile-name 5dot-gpu-worker-profile \
+    --role-name 5dot-gpu-worker-role 2>/dev/null || true
 
-echo "    IAM role ready: faik-gpu-worker-role"
+echo "    IAM role ready: 5dot-gpu-worker-role"
 
 # ============================================================
 # 3. IAM — CORE SERVICE ROLE
@@ -137,7 +137,7 @@ echo "    IAM role ready: faik-gpu-worker-role"
 echo "==> Creating IAM role for core service..."
 
 aws iam create-role \
-    --role-name faik-core-service-role \
+    --role-name 5dot-core-service-role \
     --assume-role-policy-document '{
       "Version":"2012-10-17",
       "Statement":[{
@@ -148,8 +148,8 @@ aws iam create-role \
     }' 2>/dev/null || echo "    Role already exists, skipping."
 
 aws iam put-role-policy \
-    --role-name faik-core-service-role \
-    --policy-name faik-core-service-policy \
+    --role-name 5dot-core-service-role \
+    --policy-name 5dot-core-service-policy \
     --policy-document "{
       \"Version\":\"2012-10-17\",
       \"Statement\":[
@@ -181,12 +181,12 @@ aws iam put-role-policy \
     }"
 
 aws iam create-instance-profile \
-    --instance-profile-name faik-core-service-profile 2>/dev/null || true
+    --instance-profile-name 5dot-core-service-profile 2>/dev/null || true
 aws iam add-role-to-instance-profile \
-    --instance-profile-name faik-core-service-profile \
-    --role-name faik-core-service-role 2>/dev/null || true
+    --instance-profile-name 5dot-core-service-profile \
+    --role-name 5dot-core-service-role 2>/dev/null || true
 
-echo "    IAM role ready: faik-core-service-role"
+echo "    IAM role ready: 5dot-core-service-role"
 
 # ============================================================
 # 4. LAUNCH TEMPLATE  (GPU workers)
@@ -196,17 +196,17 @@ echo "==> Creating Launch Template..."
 USER_DATA=$(base64 -w 0 infra/user_data.sh)
 
 aws ec2 create-launch-template \
-    --launch-template-name faik-gpu-worker \
+    --launch-template-name 5dot-gpu-worker \
     --version-description "v1" \
     --launch-template-data "{
       \"ImageId\": \"$AMI_ID\",
       \"InstanceType\": \"g4dn.xlarge\",
       \"KeyName\": \"$KEY_NAME\",
       \"SecurityGroupIds\": [\"$SECURITY_GROUP_ID\"],
-      \"IamInstanceProfile\": {\"Name\": \"faik-gpu-worker-profile\"},
+      \"IamInstanceProfile\": {\"Name\": \"5dot-gpu-worker-profile\"},
       \"TagSpecifications\": [{
         \"ResourceType\": \"instance\",
-        \"Tags\": [{\"Key\": \"Role\", \"Value\": \"faik-gpu-worker\"}]
+        \"Tags\": [{\"Key\": \"Role\", \"Value\": \"5dot-gpu-worker\"}]
       }],
       \"InstanceMarketOptions\": {
         \"MarketType\": \"spot\",
@@ -224,7 +224,7 @@ aws ec2 create-launch-template \
     --region $REGION 2>/dev/null || echo "    Launch template already exists."
 
 LT_ID=$(aws ec2 describe-launch-templates \
-    --filters Name=launch-template-name,Values=faik-gpu-worker \
+    --filters Name=launch-template-name,Values=5dot-gpu-worker \
     --query 'LaunchTemplates[0].LaunchTemplateId' --output text --region $REGION)
 
 echo "    Launch Template: $LT_ID"
@@ -236,7 +236,7 @@ echo "==> Creating Auto Scaling Groups..."
 
 for WORKER in video audio scene lipsync; do
     aws autoscaling create-auto-scaling-group \
-        --auto-scaling-group-name faik-worker-$WORKER \
+        --auto-scaling-group-name 5dot-worker-$WORKER \
         --launch-template "LaunchTemplateId=$LT_ID,Version=1" \
         --min-size 0 \
         --max-size 5 \
@@ -246,10 +246,10 @@ for WORKER in video audio scene lipsync; do
         --health-check-grace-period 300 \
         --default-cooldown 300 \
         --tags "Key=WorkerType,Value=$WORKER,PropagateAtLaunch=true" \
-              "Key=Role,Value=faik-gpu-worker,PropagateAtLaunch=true" \
-        --region $REGION 2>/dev/null || echo "    ASG faik-worker-$WORKER already exists."
+              "Key=Role,Value=5dot-gpu-worker,PropagateAtLaunch=true" \
+        --region $REGION 2>/dev/null || echo "    ASG 5dot-worker-$WORKER already exists."
 
-    echo "    ASG created: faik-worker-$WORKER"
+    echo "    ASG created: 5dot-worker-$WORKER"
 done
 
 # ============================================================
@@ -259,8 +259,8 @@ echo "==> Creating scaling policies..."
 
 for WORKER in video audio scene lipsync; do
     aws autoscaling put-scaling-policy \
-        --auto-scaling-group-name faik-worker-$WORKER \
-        --policy-name faik-$WORKER-scale-up \
+        --auto-scaling-group-name 5dot-worker-$WORKER \
+        --policy-name 5dot-$WORKER-scale-up \
         --policy-type StepScaling \
         --adjustment-type ChangeInCapacity \
         --metric-aggregation-type Maximum \
@@ -270,7 +270,7 @@ for WORKER in video audio scene lipsync; do
             "MetricIntervalLowerBound=10,ScalingAdjustment=3" \
         --region $REGION > /dev/null
 
-    echo "    Scaling policy created: faik-$WORKER-scale-up"
+    echo "    Scaling policy created: 5dot-$WORKER-scale-up"
 done
 
 # ============================================================
@@ -281,12 +281,12 @@ echo "==> Creating CloudWatch alarms..."
 for WORKER in video audio scene lipsync; do
     QUEUE_NAME="deepfake-$WORKER"
     POLICY_ARN=$(aws autoscaling describe-policies \
-        --auto-scaling-group-name faik-worker-$WORKER \
-        --policy-names faik-$WORKER-scale-up \
+        --auto-scaling-group-name 5dot-worker-$WORKER \
+        --policy-names 5dot-$WORKER-scale-up \
         --query 'ScalingPolicies[0].PolicyARN' --output text --region $REGION)
 
     aws cloudwatch put-metric-alarm \
-        --alarm-name "faik-$WORKER-queue-depth" \
+        --alarm-name "5dot-$WORKER-queue-depth" \
         --alarm-description "Scale up $WORKER workers when queue has messages" \
         --namespace AWS/SQS \
         --metric-name ApproximateNumberOfMessagesVisible \
@@ -300,7 +300,7 @@ for WORKER in video audio scene lipsync; do
         --treat-missing-data notBreaching \
         --region $REGION
 
-    echo "    Alarm created: faik-$WORKER-queue-depth"
+    echo "    Alarm created: 5dot-$WORKER-queue-depth"
 done
 
 # ============================================================

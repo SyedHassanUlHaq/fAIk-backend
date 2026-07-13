@@ -123,7 +123,7 @@ def check_root_and_lifespan_endpoint():
     with TestClient(main.app) as client:
         resp = client.get("/")
         assert resp.status_code == 200, resp.text
-        assert resp.json()["message"] == "fAIk Scene Detection Service running"
+        assert resp.json()["message"] == "5dot Scene Detection Service running"
 
 
 # ---------------------------------------------------------------------------

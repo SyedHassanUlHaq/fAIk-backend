@@ -18,7 +18,7 @@ async def lifespan(_app: FastAPI):
     print("[*] Voice AI service shutdown")
 
 
-app = FastAPI(title="fAIk Voice AI Service", version="1.0", lifespan=lifespan)
+app = FastAPI(title="5dot Voice AI Service", version="1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,4 +42,4 @@ app.include_router(voice.router, prefix="/v1/voice", tags=["Voice AI"])
 
 @app.get("/")
 def root():
-    return {"message": "fAIk Voice AI Service running", "version": app.version}
+    return {"message": "5dot Voice AI Service running", "version": app.version}

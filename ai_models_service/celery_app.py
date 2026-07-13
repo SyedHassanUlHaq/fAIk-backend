@@ -2,7 +2,7 @@ from celery import Celery
 from config.project_config import REDIS_URL
 
 celery_app = Celery(
-    "faik-voice-ai",
+    "5dot-voice-ai",
     broker=REDIS_URL,
     backend=REDIS_URL,
     include=["tasks.audio_scan_task"],

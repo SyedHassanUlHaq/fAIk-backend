@@ -2,7 +2,7 @@ from celery import Celery
 from config.project_config import REDIS_URL
 
 celery_app = Celery(
-    "faik-video-ai",
+    "5dot-video-ai",
     broker=REDIS_URL,
     backend=REDIS_URL,
     include=["tasks.video_scan_task"],

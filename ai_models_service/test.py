@@ -101,7 +101,7 @@ def check_root_endpoint():
     client = TestClient(main.app)
     resp = client.get("/")
     assert resp.status_code == 200, resp.text
-    assert resp.json()["message"] == "fAIk Voice AI Service running"
+    assert resp.json()["message"] == "5dot Voice AI Service running"
 
 
 # ---------------------------------------------------------------------------

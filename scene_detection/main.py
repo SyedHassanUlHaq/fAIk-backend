@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
     print("[*] Scene detection service shutdown")
 
 
-app = FastAPI(title="fAIk Scene Detection Service", version="1.0", lifespan=lifespan)
+app = FastAPI(title="5dot Scene Detection Service", version="1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -49,4 +49,4 @@ app.include_router(scene.router, prefix="/v1/scene", tags=["Scene / Tamper AI"])
 
 @app.get("/")
 def root():
-    return {"message": "fAIk Scene Detection Service running", "version": app.version}
+    return {"message": "5dot Scene Detection Service running", "version": app.version}
