@@ -4,4 +4,4 @@
 
 [submodule "core_service"]
 	path = core_service
-	url = git@github.com:SyedHassanUlHaq/FaikCoreService.git
+	url = https://github.com/SyedHassanUlHaq/FaikCoreService.git
