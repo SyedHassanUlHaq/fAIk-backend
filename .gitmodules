@@ -1,7 +1,7 @@
-[submodule "lipsync-detector"]
-	path = lipsync-detector
-	url = git@github.com:SyedHassanUlHaq/lipsync-detector.git
-
 [submodule "core_service"]
 	path = core_service
 	url = https://github.com/SyedHassanUlHaq/5dotCoreService.git
+[submodule "lipsync_service"]
+	path = lipsync_service
+	url = https://github.com/AbdulRauf-Sidd/5dot-lipsync-detector.git
+	branch = main
