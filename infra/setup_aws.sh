@@ -69,7 +69,7 @@ echo "    Results : $RESULT_URL"
 echo "==> Creating IAM role for GPU workers..."
 
 aws iam create-role \
-    --role-name 5dot-gpu-worker-role \
+    --role-name faik-gpu-worker-role \
     --assume-role-policy-document '{
       "Version":"2012-10-17",
       "Statement":[{
@@ -80,7 +80,7 @@ aws iam create-role \
     }' 2>/dev/null || echo "    Role already exists, skipping."
 
 aws iam put-role-policy \
-    --role-name 5dot-gpu-worker-role \
+    --role-name faik-gpu-worker-role \
     --policy-name 5dot-gpu-worker-policy \
     --policy-document "{
       \"Version\":\"2012-10-17\",
@@ -120,12 +120,12 @@ aws iam put-role-policy \
     }"
 
 aws iam create-instance-profile \
-    --instance-profile-name 5dot-gpu-worker-profile 2>/dev/null || true
+    --instance-profile-name faik-gpu-worker-profile 2>/dev/null || true
 aws iam add-role-to-instance-profile \
-    --instance-profile-name 5dot-gpu-worker-profile \
-    --role-name 5dot-gpu-worker-role 2>/dev/null || true
+    --instance-profile-name faik-gpu-worker-profile \
+    --role-name faik-gpu-worker-role 2>/dev/null || true
 
-echo "    IAM role ready: 5dot-gpu-worker-role"
+echo "    IAM role ready: faik-gpu-worker-role"
 
 # ============================================================
 # 3. IAM — CORE SERVICE ROLE
@@ -137,7 +137,7 @@ echo "    IAM role ready: 5dot-gpu-worker-role"
 echo "==> Creating IAM role for core service..."
 
 aws iam create-role \
-    --role-name 5dot-core-service-role \
+    --role-name faik-core-service-role \
     --assume-role-policy-document '{
       "Version":"2012-10-17",
       "Statement":[{
@@ -148,7 +148,7 @@ aws iam create-role \
     }' 2>/dev/null || echo "    Role already exists, skipping."
 
 aws iam put-role-policy \
-    --role-name 5dot-core-service-role \
+    --role-name faik-core-service-role \
     --policy-name 5dot-core-service-policy \
     --policy-document "{
       \"Version\":\"2012-10-17\",
@@ -181,12 +181,12 @@ aws iam put-role-policy \
     }"
 
 aws iam create-instance-profile \
-    --instance-profile-name 5dot-core-service-profile 2>/dev/null || true
+    --instance-profile-name faik-core-service-profile 2>/dev/null || true
 aws iam add-role-to-instance-profile \
-    --instance-profile-name 5dot-core-service-profile \
-    --role-name 5dot-core-service-role 2>/dev/null || true
+    --instance-profile-name faik-core-service-profile \
+    --role-name faik-core-service-role 2>/dev/null || true
 
-echo "    IAM role ready: 5dot-core-service-role"
+echo "    IAM role ready: faik-core-service-role"
 
 # ============================================================
 # 4. LAUNCH TEMPLATE  (GPU workers)
@@ -203,7 +203,7 @@ aws ec2 create-launch-template \
       \"InstanceType\": \"g4dn.xlarge\",
       \"KeyName\": \"$KEY_NAME\",
       \"SecurityGroupIds\": [\"$SECURITY_GROUP_ID\"],
-      \"IamInstanceProfile\": {\"Name\": \"5dot-gpu-worker-profile\"},
+      \"IamInstanceProfile\": {\"Name\": \"faik-gpu-worker-profile\"},
       \"TagSpecifications\": [{
         \"ResourceType\": \"instance\",
         \"Tags\": [{\"Key\": \"Role\", \"Value\": \"5dot-gpu-worker\"}]
