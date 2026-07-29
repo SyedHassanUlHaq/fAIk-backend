@@ -5,3 +5,9 @@
 	path = lipsync_service
 	url = https://github.com/AbdulRauf-Sidd/5dot-lipsync-detector.git
 	branch = main
+[submodule "ai_audio_service"]
+	path = ai_audio_service
+	url = https://github.com/AbdulRauf-Sidd/5dot-ai-audio-detection-service.git
+[submodule "video_ai_service"]
+	path = video_ai_service
+	url = https://github.com/AbdulRauf-Sidd/5dot-ai-video-detection-service.git
